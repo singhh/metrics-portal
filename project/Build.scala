@@ -31,6 +31,7 @@ import play.sbt.routes.RoutesKeys.routesGenerator
 import RjsKeys._
 import sbt._
 import Keys._
+import com.simplytyped.Antlr4Plugin._
 import play.sbt.PlayImport._
 import com.typesafe.sbt.packager.rpm._
 import com.typesafe.sbt.packager.rpm.RpmPlugin.autoImport._
@@ -47,7 +48,8 @@ object ApplicationBuild extends Build {
     val jacksonVersion = "2.7.4"
     val cassandraDriverVersion = "3.2.0"
 
-    val s = CheckstyleSettings.checkstyleTask ++ aspectjSettings
+    val s = CheckstyleSettings.checkstyleTask ++ aspectjSettings ++ antlr4Settings
+
 
     val appDependencies = Seq(
       javaWs,
@@ -104,6 +106,7 @@ object ApplicationBuild extends Build {
     )
 
     val main = Project(appName, file("."), settings = s).enablePlugins(play.sbt.PlayJava, play.ebean.sbt.PlayEbean, RpmPlugin).settings(
+      antlr4PackageName in Antlr4 := Some("com.arpnetworking.mql.grammar"),
 
       organization := "com.arpnetworking.metrics",
       organizationName := "Arpnetworking Inc",
