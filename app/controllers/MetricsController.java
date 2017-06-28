@@ -1,10 +1,9 @@
 package controllers;
 
-import assets.javascripts.mql.grammar.CollectingErrorListener;
-import com.arpnetworking.mql.grammar.MqlBaseListener;
+import com.arpnetworking.mql.grammar.CollectingErrorListener;
 import com.arpnetworking.mql.grammar.MqlLexer;
-import com.arpnetworking.mql.grammar.MqlListener;
 import com.arpnetworking.mql.grammar.MqlParser;
+import com.arpnetworking.mql.grammar.QueryRunner;
 import com.arpnetworking.steno.Logger;
 import com.arpnetworking.steno.LoggerFactory;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -63,13 +62,10 @@ public class MetricsController extends Controller {
         final MqlLexer lexer = new MqlLexer(new ANTLRInputStream(query.getQuery()));
         final CommonTokenStream tokens = new CommonTokenStream(lexer);
         final MqlParser parser = new MqlParser(tokens);
-//        parser.removeErrorListeners();
-        final MqlListener listener = new MqlBaseListener() {
-
-        };
         final CollectingErrorListener errorListener = new CollectingErrorListener();
         parser.addErrorListener(new DiagnosticErrorListener());
         parser.addErrorListener(errorListener);
+
         parser.getInterpreter().setPredictionMode(PredictionMode.SLL);
         MqlParser.StatementContext statement;
         try {
@@ -89,7 +85,9 @@ public class MetricsController extends Controller {
             errorListener.getErrors().forEach(errors::add);
             return CompletableFuture.completedFuture(Results.badRequest(response));
         }
-        return CompletableFuture.completedFuture(Results.ok(statement.getText()));
+        final QueryRunner queryRunner = new QueryRunner();
+        final CompletionStage<JsonNode> response = queryRunner.visit(statement);
+        return response.thenApply(Results::ok);
     }
 
     private final ObjectMapper _mapper;

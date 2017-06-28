@@ -1,4 +1,4 @@
-package assets.javascripts.mql.grammar;
+package com.arpnetworking.mql.grammar;
 
 import com.google.common.collect.Lists;
 import org.antlr.v4.runtime.BaseErrorListener;

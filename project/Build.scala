@@ -107,6 +107,7 @@ object ApplicationBuild extends Build {
 
     val main = Project(appName, file("."), settings = s).enablePlugins(play.sbt.PlayJava, play.ebean.sbt.PlayEbean, RpmPlugin).settings(
       antlr4PackageName in Antlr4 := Some("com.arpnetworking.mql.grammar"),
+      antlr4GenVisitor in Antlr4 := true,
 
       organization := "com.arpnetworking.metrics",
       organizationName := "Arpnetworking Inc",
