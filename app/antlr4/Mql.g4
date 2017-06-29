@@ -66,13 +66,17 @@ statement : stage (PIPE stage)* EOF;
 
 stage : select ;
 
-select : FROM timeRange SELECT metricName groupByClause? (AS? Identifier)?;
+select : FROM timeRange SELECT metricName groupByClause? (AS? timeSeriesReference)?;
+
+timeSeriesReference : Identifier ;
 
 groupByClause : GROUP BY groupByTerm (COMMA groupByTerm)* ;
 
 groupByTerm : Identifier ;
 
-aggregation : Identifier (L_PAREND argumentList? R_PAREND)? ;
+aggregation : aggregatorName (L_PAREND argumentList? R_PAREND)? ;
+
+aggregatorName : Identifier ;
 
 argumentList : argument (COMMA argument)* ;
 

@@ -24,6 +24,7 @@ import akka.cluster.Cluster;
 import akka.cluster.singleton.ClusterSingletonManager;
 import akka.cluster.singleton.ClusterSingletonManagerSettings;
 import com.arpnetworking.commons.akka.GuiceActorCreator;
+import com.arpnetworking.kairos.client.KairosDbClient;
 import com.arpnetworking.metrics.MetricsFactory;
 import com.arpnetworking.metrics.impl.ApacheHttpSink;
 import com.arpnetworking.metrics.impl.TsdMetricsFactory;
@@ -36,6 +37,7 @@ import com.arpnetworking.play.configuration.ConfigurationHelper;
 import com.datastax.driver.core.CodecRegistry;
 import com.datastax.driver.extras.codecs.enums.EnumNameCodec;
 import com.datastax.driver.extras.codecs.joda.InstantCodec;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.AbstractModule;
 import com.google.inject.Injector;
 import com.google.inject.Provider;
@@ -126,6 +128,17 @@ public class MainModule extends AbstractModule {
         registry.register(new EnumNameCodec<>(Operator.class));
         registry.register(new EnumNameCodec<>(Context.class));
         return registry;
+    }
+
+    @Provides
+    @Singleton
+    @SuppressFBWarnings("UPM_UNCALLED_PRIVATE_METHOD") // Invoked reflectively by Guice
+    private KairosDbClient provideKairosDbClient(final ActorSystem actorSystem, final ObjectMapper mapper, final Configuration configuration) {
+        return new KairosDbClient.Builder()
+                .setActorSystem(actorSystem)
+                .setMapper(mapper)
+                .setUri(URI.create(configuration.getString("kairosdb.uri")))
+                .build();
     }
 
     private static final class HealthProviderProvider implements Provider<HealthProvider> {

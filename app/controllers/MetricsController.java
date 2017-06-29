@@ -1,5 +1,6 @@
 package controllers;
 
+import com.arpnetworking.kairos.client.KairosDbClient;
 import com.arpnetworking.mql.grammar.CollectingErrorListener;
 import com.arpnetworking.mql.grammar.MqlLexer;
 import com.arpnetworking.mql.grammar.MqlParser;
@@ -13,7 +14,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import models.view.MetricsQuery;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.DiagnosticErrorListener;
 import org.antlr.v4.runtime.atn.PredictionMode;
 import play.libs.Json;
 import play.mvc.Controller;
@@ -35,8 +35,9 @@ import javax.inject.Singleton;
 public class MetricsController extends Controller {
 
     @Inject
-    public MetricsController(final ObjectMapper mapper) {
+    public MetricsController(final ObjectMapper mapper, final KairosDbClient kairosDbClient) {
         _mapper = mapper;
+        _kairosDbClient = kairosDbClient;
     }
 
     public CompletionStage<Result> query() {
@@ -63,7 +64,7 @@ public class MetricsController extends Controller {
         final CommonTokenStream tokens = new CommonTokenStream(lexer);
         final MqlParser parser = new MqlParser(tokens);
         final CollectingErrorListener errorListener = new CollectingErrorListener();
-        parser.addErrorListener(new DiagnosticErrorListener());
+        parser.removeErrorListeners();
         parser.addErrorListener(errorListener);
 
         parser.getInterpreter().setPredictionMode(PredictionMode.SLL);
@@ -85,12 +86,13 @@ public class MetricsController extends Controller {
             errorListener.getErrors().forEach(errors::add);
             return CompletableFuture.completedFuture(Results.badRequest(response));
         }
-        final QueryRunner queryRunner = new QueryRunner();
-        final CompletionStage<JsonNode> response = queryRunner.visit(statement);
+        final QueryRunner queryRunner = new QueryRunner(_kairosDbClient);
+        final CompletionStage<JsonNode> response = queryRunner.visitStatement(statement);
         return response.thenApply(Results::ok);
     }
 
     private final ObjectMapper _mapper;
+    private final KairosDbClient _kairosDbClient;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MetricsController.class);
 }
