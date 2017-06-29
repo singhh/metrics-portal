@@ -24,8 +24,18 @@ public final class MetricsQuery {
     }
 
     @JsonProperty("start_absolute")
+    private long startMillis() {
+        return _startTime.getMillis();
+    }
+
+    @JsonProperty("end_absolute")
+    private long endMillis() {
+        return _endTime.getMillis();
+    }
+
     private final DateTime _startTime;
     private final DateTime _endTime;
+    @JsonProperty("metrics")
     private final List<Metric> _metrics;
 
     /**
@@ -94,13 +104,14 @@ public final class MetricsQuery {
     }
 
     /**
-     * Holds the data for a Metric dlement of the query.
+     * Holds the data for a Metric element of the query.
      */
     public static final class Metric {
         private Metric(final Builder builder) {
             _name = builder._name;
         }
 
+        @JsonProperty("name")
         private final String _name;
 
         public static final class Builder extends OvalBuilder<Metric> {

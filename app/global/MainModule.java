@@ -24,6 +24,7 @@ import akka.cluster.Cluster;
 import akka.cluster.singleton.ClusterSingletonManager;
 import akka.cluster.singleton.ClusterSingletonManagerSettings;
 import com.arpnetworking.commons.akka.GuiceActorCreator;
+import com.arpnetworking.commons.jackson.databind.ObjectMapperFactory;
 import com.arpnetworking.kairos.client.KairosDbClient;
 import com.arpnetworking.metrics.MetricsFactory;
 import com.arpnetworking.metrics.impl.ApacheHttpSink;
@@ -50,7 +51,9 @@ import models.internal.Operator;
 import models.internal.impl.DefaultFeatures;
 import play.Configuration;
 import play.Environment;
+import play.api.libs.json.jackson.PlayJsonModule$;
 import play.inject.ApplicationLifecycle;
+import play.libs.Json;
 
 import java.net.URI;
 import java.util.Collections;
@@ -140,6 +143,22 @@ public class MainModule extends AbstractModule {
                 .setUri(URI.create(configuration.getString("kairosdb.uri")))
                 .build();
     }
+
+    @Singleton
+    @Provides
+    @SuppressFBWarnings("UPM_UNCALLED_PRIVATE_METHOD") // Invoked reflectively by Guice
+    private ObjectMapper provideObjectMapper(final ApplicationLifecycle lifecycle) {
+        final ObjectMapper objectMapper = ObjectMapperFactory.createInstance();
+        objectMapper.registerModule(PlayJsonModule$.MODULE$);
+        Json.setObjectMapper(objectMapper);
+        lifecycle.addStopHook( () -> {
+            Json.setObjectMapper(null);
+            return CompletableFuture.completedFuture(null);
+        });
+
+        return objectMapper;
+    }
+
 
     private static final class HealthProviderProvider implements Provider<HealthProvider> {
 

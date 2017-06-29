@@ -9,7 +9,9 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Created by brandon on 6/27/17.
+ * Collects errors for later display.
+ *
+ * @author Brandon Arp (brandon dot arp at smartsheet dot com)
  */
 public class CollectingErrorListener extends BaseErrorListener {
     @Override
