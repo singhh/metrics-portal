@@ -4,7 +4,7 @@ import com.arpnetworking.kairos.client.KairosDbClient;
 import com.arpnetworking.kairos.client.models.MetricsQuery;
 import com.arpnetworking.kairos.client.models.MetricsQueryResponse;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Maps;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeFieldType;
@@ -12,8 +12,8 @@ import org.joda.time.Duration;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import javax.inject.Inject;
 
 /**
  * Executes a query against KairosDB.
@@ -21,8 +21,10 @@ import java.util.concurrent.CompletionStage;
  * @author Brandon Arp (brandon dot arp at smartsheet dot com)
  */
 public class QueryRunner extends MqlBaseVisitor<Object> {
-    public QueryRunner(final KairosDbClient kairosDbClient) {
+    @Inject
+    public QueryRunner(final KairosDbClient kairosDbClient, final ObjectMapper mapper) {
         _kairosDbClient = kairosDbClient;
+        _mapper = mapper;
     }
 
     @Override
@@ -31,8 +33,8 @@ public class QueryRunner extends MqlBaseVisitor<Object> {
         // Build each stage and chain them together
         stages.forEach(this::visit);
 
-
-        return CompletableFuture.completedFuture(JsonNodeFactory.instance.objectNode().put("foo", "bar"));
+        return _previousQuery.thenApply(_mapper::valueToTree);
+//        return CompletableFuture.completedFuture(JsonNodeFactory.instance.objectNode().put("foo", "bar"));
     }
 
     @Override
@@ -42,6 +44,14 @@ public class QueryRunner extends MqlBaseVisitor<Object> {
 
     @Override
     public CompletionStage<MetricsQueryResponse> visitSelect(MqlParser.SelectContext ctx) {
+        // TODO: get dependent queries
+        // requiredQueries = computeDepenencies
+
+        // If there are dependencies, we compose the futures
+        // CompletionStage<Void> dependenciesComplete = CompletableFuture.allOf(requiredQueries);
+        // Wrap the query binding
+        // dependenciesComplete.thenApply(bindAndRun(query));
+
         final String metricName = ctx.metricName().Identifier().getText();
         final TimeRange timeRange = visitTimeRange(ctx.timeRange());
         final MetricsQuery query = new MetricsQuery.Builder()
@@ -51,7 +61,10 @@ public class QueryRunner extends MqlBaseVisitor<Object> {
                         .setName(metricName)
                         .build())
                 .build();
-        return _kairosDbClient.queryMetrics(query);
+
+        final CompletionStage<MetricsQueryResponse> response = _kairosDbClient.queryMetrics(query);
+        _previousQuery = response;
+        return response;
     }
 
     @Override
@@ -105,8 +118,11 @@ public class QueryRunner extends MqlBaseVisitor<Object> {
         }
     }
 
+    private CompletionStage<MetricsQueryResponse> _previousQuery = null;
+
     private final Map<String, CompletionStage<MetricsQueryResponse>> _queries = Maps.newHashMap();
     private final KairosDbClient _kairosDbClient;
+    private final ObjectMapper _mapper;
 
     private static final class TimeRange {
         private TimeRange(final DateTime start, final DateTime end) {

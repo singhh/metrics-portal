@@ -1,6 +1,5 @@
 package controllers;
 
-import com.arpnetworking.kairos.client.KairosDbClient;
 import com.arpnetworking.mql.grammar.CollectingErrorListener;
 import com.arpnetworking.mql.grammar.MqlLexer;
 import com.arpnetworking.mql.grammar.MqlParser;
@@ -24,6 +23,7 @@ import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 
 /**
@@ -35,9 +35,9 @@ import javax.inject.Singleton;
 public class MetricsController extends Controller {
 
     @Inject
-    public MetricsController(final ObjectMapper mapper, final KairosDbClient kairosDbClient) {
+    public MetricsController(final ObjectMapper mapper, final Provider<QueryRunner> queryRunnerFactory) {
         _mapper = mapper;
-        _kairosDbClient = kairosDbClient;
+        _queryRunnerFactory = queryRunnerFactory;
     }
 
     public CompletionStage<Result> query() {
@@ -86,13 +86,13 @@ public class MetricsController extends Controller {
             errorListener.getErrors().forEach(errors::add);
             return CompletableFuture.completedFuture(Results.badRequest(response));
         }
-        final QueryRunner queryRunner = new QueryRunner(_kairosDbClient);
+        final QueryRunner queryRunner = _queryRunnerFactory.get();
         final CompletionStage<JsonNode> response = queryRunner.visitStatement(statement);
         return response.thenApply(Results::ok);
     }
 
     private final ObjectMapper _mapper;
-    private final KairosDbClient _kairosDbClient;
+    private final Provider<QueryRunner> _queryRunnerFactory;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MetricsController.class);
 }

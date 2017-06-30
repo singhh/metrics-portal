@@ -2,8 +2,12 @@ package com.arpnetworking.kairos.client.models;
 
 import com.arpnetworking.commons.builder.OvalBuilder;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
+import com.google.common.collect.TreeMultiset;
 import net.sf.oval.constraint.NotEmpty;
 import net.sf.oval.constraint.NotNull;
 import org.joda.time.DateTime;
@@ -136,6 +140,9 @@ public final class MetricsQuery {
             @NotNull
             @NotEmpty
             private String _name;
+
+            @NotNull
+            private Multimap<String, String> _tags = HashMultiset;
         }
     }
 }

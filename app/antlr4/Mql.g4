@@ -9,6 +9,7 @@ NOW : [Nn][Oo][Ww] ;
 AGO : [Aa][Gg][Oo] ;
 GROUP : [Gg][Rr][Oo][Uu][Pp] ;
 BY : [Bb][Yy] ;
+WHERE : [Ww][Hh][Ee][Rr][Ee] ;
 
 SECONDS : [Ss][Ee][Cc][Oo][Nn][Dd][Ss] ;
 SECOND : [Ss][Ee][Cc][Oo][Nn][Dd] ;
@@ -26,8 +27,11 @@ YEARS : [Yy][Ee][Aa][Rr][Ss] ;
 YEAR : [Yy][Ee][Aa][Rr] ;
 
 COMMA : ',' ;
+EQUALS : '=' ;
 L_PAREND : '(' ;
 R_PAREND : ')' ;
+L_BRACKET : '[' ;
+R_BRACKET : ']' ;
 
 NumericLiteral : Digits '.' Digits? ([Ee] [+-]? Digits)?
             | '.' Digits ([Ee] [+-]? Digits)?
@@ -66,9 +70,17 @@ statement : stage (PIPE stage)* EOF;
 
 stage : select ;
 
-select : FROM timeRange SELECT metricName groupByClause? (AS? timeSeriesReference)?;
+select : FROM timeRange SELECT metricName whereClause? groupByClause? (AS? timeSeriesReference)?;
 
 timeSeriesReference : Identifier ;
+
+whereClause : WHERE whereTerm+ ;
+
+whereTerm : tag EQUALS whereValue ;
+
+tag : Identifier ;
+
+whereValue : StringLiteral | L_BRACKET StringLiteral (COMMA StringLiteral)* R_BRACKET ;
 
 groupByClause : GROUP BY groupByTerm (COMMA groupByTerm)* ;
 
