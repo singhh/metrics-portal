@@ -2,12 +2,10 @@ package com.arpnetworking.kairos.client.models;
 
 import com.arpnetworking.commons.builder.OvalBuilder;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
-import com.google.common.collect.Multimaps;
-import com.google.common.collect.TreeMultiset;
 import net.sf.oval.constraint.NotEmpty;
 import net.sf.oval.constraint.NotNull;
 import org.joda.time.DateTime;
@@ -113,10 +111,13 @@ public final class MetricsQuery {
     public static final class Metric {
         private Metric(final Builder builder) {
             _name = builder._name;
+            _tags = builder._tags;
         }
 
         @JsonProperty("name")
         private final String _name;
+        @JsonProperty("tags")
+        private final Multimap<String, String> _tags;
 
         public static final class Builder extends OvalBuilder<Metric> {
             /**
@@ -129,11 +130,23 @@ public final class MetricsQuery {
             /**
              * Sets the name of the metric. Cannot be null or empty.
              *
-             * @param value the name fo the metric
+             * @param value the name of the metric
              * @return this {@link Builder}
              */
             public Builder setName(final String value) {
                 _name = value;
+                return this;
+            }
+
+            /**
+             * Sets the tags. Cannot be null
+             *
+             * @param value the tags
+             * @return this {@link Builder}
+             */
+            public Builder setTags(final Multimap<String, String> value) {
+                _tags.clear();
+                _tags.putAll(value);
                 return this;
             }
 
@@ -142,7 +155,7 @@ public final class MetricsQuery {
             private String _name;
 
             @NotNull
-            private Multimap<String, String> _tags = HashMultiset;
+            private Multimap<String, String> _tags = LinkedHashMultimap.create();
         }
     }
 }

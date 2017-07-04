@@ -5,7 +5,9 @@ import com.arpnetworking.kairos.client.models.MetricsQuery;
 import com.arpnetworking.kairos.client.models.MetricsQueryResponse;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Multimap;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeFieldType;
 import org.joda.time.Duration;
@@ -13,6 +15,7 @@ import org.joda.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 
 /**
@@ -59,6 +62,7 @@ public class QueryRunner extends MqlBaseVisitor<Object> {
                 .setEndTime(timeRange._end)
                 .addMetric(new MetricsQuery.Metric.Builder()
                         .setName(metricName)
+                        .setTags(visitWhereClause(ctx.whereClause()))
                         .build())
                 .build();
 
@@ -88,6 +92,77 @@ public class QueryRunner extends MqlBaseVisitor<Object> {
     @Override
     public DateTime visitAbsoluteTime(final MqlParser.AbsoluteTimeContext ctx) {
         return DateTime.parse(ctx.StringLiteral().getText());
+    }
+
+    @Override
+    public Multimap<String, String> visitWhereClause(final MqlParser.WhereClauseContext ctx) {
+        final Multimap<String, String> map = LinkedHashMultimap.create();
+        if (ctx != null) {
+            final List<MqlParser.WhereTermContext> whereTerms = ctx.whereTerm();
+            for (MqlParser.WhereTermContext where : whereTerms) {
+                final List<String> values = visitWhereValue(where.whereValue());
+                for (String value : values) {
+                    map.put(visitTag(where.tag()), value);
+                }
+            }
+        }
+
+        return map;
+    }
+
+    @Override
+    public String visitTag(final MqlParser.TagContext ctx) {
+        return ctx.Identifier().getText();
+    }
+
+    @Override
+    public List<String> visitWhereValue(final MqlParser.WhereValueContext ctx) {
+        return ctx.quotedString().stream().map(this::visitQuotedString).collect(Collectors.toList());
+    }
+
+    @Override
+    public String visitQuotedString(final MqlParser.QuotedStringContext ctx) {
+        final String raw = ctx.getText();
+        final String stripped = raw.substring(1, raw.length() - 1);
+        // TODO: Escape things like octal an unicode properly
+        return escapeString(stripped);
+    }
+
+    private String escapeString(final String in) {
+        final StringBuilder b = new StringBuilder();
+        boolean sawEscape = false;
+        for (int i = 0; i < in.length(); i++) {
+            final Character c = in.charAt(i);
+            if (!sawEscape) {
+                if (c == '\\') {
+                    sawEscape = true;
+                } else {
+                    b.append(c);
+                }
+            } else {
+                sawEscape = false;
+                if (c == '\\') {
+                    b.append(c);
+                } else if (c == 'b') {
+                    b.append('\b');
+                } else if (c == 'n') {
+                    b.append('\n');
+                } else if (c == 't') {
+                    b.append('\t');
+                } else if (c == 'r') {
+                    b.append('\r');
+                } else if (c == 'f') {
+                    b.append('\f');
+                } else if (c == '\'') {
+                    b.append('\'');
+                } else if (c == '"') {
+                    b.append('"');
+                } else {
+                    throw new IllegalArgumentException("character '" + c + "' is not a valid escape");
+                }
+            }
+        }
+        return b.toString();
     }
 
     @Override

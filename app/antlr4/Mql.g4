@@ -1,6 +1,5 @@
 grammar Mql;
 
-PIPE : '|' ;
 SELECT : [Ss][Ee][Ll][Ee][Cc][Tt] ;
 FROM : [Ff][Rr][Oo][Mm] ;
 TO : [Tt][Oo] ;
@@ -10,6 +9,7 @@ AGO : [Aa][Gg][Oo] ;
 GROUP : [Gg][Rr][Oo][Uu][Pp] ;
 BY : [Bb][Yy] ;
 WHERE : [Ww][Hh][Ee][Rr][Ee] ;
+AND : [Aa][Nn][Dd] ;
 
 SECONDS : [Ss][Ee][Cc][Oo][Nn][Dd][Ss] ;
 SECOND : [Ss][Ee][Cc][Oo][Nn][Dd] ;
@@ -26,6 +26,7 @@ MONTH : [Mm][Oo][Nn][Tt][Hh] ;
 YEARS : [Yy][Ee][Aa][Rr][Ss] ;
 YEAR : [Yy][Ee][Aa][Rr] ;
 
+PIPE : '|' ;
 COMMA : ',' ;
 EQUALS : '=' ;
 L_PAREND : '(' ;
@@ -47,7 +48,7 @@ timeUnit : SECONDS | SECOND | MINUTES | MINUTE | HOURS | HOUR | DAYS | DAY | WEE
 
 StringLiteral : UnterminatedStringConstant '\'' ;
 
-UnterminatedStringConstant : '\'' ( '\'\'' | ~'\'' )* ;
+UnterminatedStringConstant : '\'' ( '\\\'' | ~'\'' )* ;
 
 Whitespace :[ \t]+ -> channel(HIDDEN) ;
 
@@ -74,13 +75,15 @@ select : FROM timeRange SELECT metricName whereClause? groupByClause? (AS? timeS
 
 timeSeriesReference : Identifier ;
 
-whereClause : WHERE whereTerm+ ;
+whereClause : WHERE whereTerm ((AND | COMMA) whereTerm)*;
 
 whereTerm : tag EQUALS whereValue ;
 
 tag : Identifier ;
 
-whereValue : StringLiteral | L_BRACKET StringLiteral (COMMA StringLiteral)* R_BRACKET ;
+whereValue : quotedString | L_BRACKET quotedString (COMMA quotedString)* R_BRACKET ;
+
+quotedString : StringLiteral ;
 
 groupByClause : GROUP BY groupByTerm (COMMA groupByTerm)* ;
 
