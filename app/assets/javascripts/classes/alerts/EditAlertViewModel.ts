@@ -31,24 +31,10 @@ class OperatorOption {
     }
 }
 
-class ContextOption {
-    text: string;
-    value: string;
-
-    constructor(text, value) {
-        this.text = text;
-        this.value = value;
-    }
-}
-
 class EditAlertViewModel {
     id = ko.observable<string>("");
-    context = ko.observable<string>("CLUSTER");
     name = ko.observable<string>("");
-    metric = ko.observable<string>("");
-    service = ko.observable<string>("");
-    cluster = ko.observable<string>("");
-    statistic = ko.observable<string>("");
+    query = ko.observable<string>("from 2 hours ago to now select elapsed");
     period = ko.observable<string>("PT1M");
     operator = ko.observable<string>("GREATER_THAN");
     value = ko.observable<number>(0);
@@ -61,10 +47,10 @@ class EditAlertViewModel {
         new OperatorOption("=", "EQUAL_TO"),
         new OperatorOption("!=", "NOT_EQUAL_TO"),
     ];
-    contexts = [
-        new ContextOption("Host", "HOST"),
-        new ContextOption("Cluster", "CLUSTER")
-    ];
+
+    constructor() {
+        this.name.subscribe((newValue) => this.queryChanged());
+    }
 
     activate(id: String) {
         if (id != null) {
@@ -78,17 +64,17 @@ class EditAlertViewModel {
         $.getJSON("/v1/alerts/" + id, {}, (data) => {
             console.log(data);
             this.id(data.id);
-            this.context(data.context);
             this.name(data.name);
-            this.metric(data.metric);
-            this.service(data.service);
-            this.cluster(data.cluster);
-            this.statistic(data.statistic);
+            this.query(data.query);
             this.period(data.period);
             this.operator(data.operator);
             this.value(data.value.value);
             this.valueUnit(data.value.unit);
         });
+    }
+
+    queryChanged(): void {
+        console.log("value changed: ", this.query());
     }
 
     save(): void {
@@ -99,12 +85,8 @@ class EditAlertViewModel {
             dataType: "json",
             data: JSON.stringify({
                 "id": this.id(),
-                "context": this.context(),
-                "metric": this.metric(),
+                "query": this.query(),
                 "name": this.name(),
-                "cluster": this.cluster(),
-                "service": this.service(),
-                "statistic": this.statistic(),
                 "period": this.period(),
                 "operator": this.operator(),
                 "value": {"value": this.value(), "unit": this.valueUnit()}

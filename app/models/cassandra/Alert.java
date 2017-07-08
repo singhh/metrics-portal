@@ -23,7 +23,6 @@ import com.datastax.driver.mapping.annotations.Param;
 import com.datastax.driver.mapping.annotations.PartitionKey;
 import com.datastax.driver.mapping.annotations.Query;
 import com.datastax.driver.mapping.annotations.Table;
-import models.internal.Context;
 import models.internal.Operator;
 import org.joda.time.Instant;
 
@@ -58,21 +57,8 @@ public class Alert {
     @Column(name = "name")
     private String name;
 
-    @Column(name = "cluster")
-    private String cluster;
-
-    @Column(name = "service")
-    private String service;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "context")
-    private Context context;
-
-    @Column(name = "metric")
-    private String metric;
-
-    @Column(name = "statistic")
-    private String statistic;
+    @Column(name = "query")
+    private String query;
 
     @Column(name = "period_in_seconds")
     private int periodInSeconds;
@@ -134,44 +120,12 @@ public class Alert {
         name = value;
     }
 
-    public String getCluster() {
-        return cluster;
+    public String getQuery() {
+        return query;
     }
 
-    public void setCluster(final String value) {
-        cluster = value;
-    }
-
-    public String getService() {
-        return service;
-    }
-
-    public void setService(final String value) {
-        service = value;
-    }
-
-    public Context getContext() {
-        return context;
-    }
-
-    public void setContext(final Context value) {
-        context = value;
-    }
-
-    public String getMetric() {
-        return metric;
-    }
-
-    public void setMetric(final String value) {
-        metric = value;
-    }
-
-    public String getStatistic() {
-        return statistic;
-    }
-
-    public void setStatistic(final String value) {
-        statistic = value;
+    public void setQuery(final String value) {
+        query = value;
     }
 
     public int getPeriodInSeconds() {

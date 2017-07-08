@@ -134,27 +134,12 @@ public final class CassandraAlertRepository implements AlertRepository {
 
         Stream<models.cassandra.Alert> alertStream = StreamSupport.stream(allAlerts, false);
 
-        if (query.getCluster().isPresent()) {
-            alertStream = alertStream.filter(alert -> alert.getCluster().equals(query.getCluster().get()));
-        }
-
-        if (query.getService().isPresent()) {
-            alertStream = alertStream.filter(alert -> alert.getService().equals(query.getService().get()));
-        }
-
-        if (query.getContext().isPresent()) {
-            alertStream = alertStream.filter(alert -> alert.getContext().equals(query.getContext().get()));
-        }
-
         if (query.getContains().isPresent()) {
             alertStream = alertStream.filter(alert -> {
                 final String contains = query.getContains().get();
-                return alert.getService().contains(contains)
-                        || alert.getCluster().contains(contains)
-                        || alert.getMetric().contains(contains)
+                return alert.getQuery().contains(contains)
                         || alert.getOperator().toString().contains(contains)
-                        || alert.getName().contains(contains)
-                        || alert.getStatistic().contains(contains);
+                        || alert.getName().contains(contains);
             });
         }
 
@@ -185,17 +170,13 @@ public final class CassandraAlertRepository implements AlertRepository {
         final models.cassandra.Alert cassAlert = new models.cassandra.Alert();
         cassAlert.setUuid(alert.getId());
         cassAlert.setOrganization(organization.getId());
-        cassAlert.setCluster(alert.getCluster());
-        cassAlert.setMetric(alert.getMetric());
-        cassAlert.setContext(alert.getContext());
         cassAlert.setNagiosExtensions(convertToCassandraNagiosExtension(alert.getNagiosExtension()));
         cassAlert.setName(alert.getName());
+        cassAlert.setQuery(alert.getQuery());
         cassAlert.setOperator(alert.getOperator());
         cassAlert.setPeriodInSeconds(alert.getPeriod().toStandardSeconds().getSeconds());
         cassAlert.setQuantityValue(alert.getValue().getValue());
         cassAlert.setQuantityUnit(alert.getValue().getUnit().orElse(null));
-        cassAlert.setStatistic(alert.getStatistic());
-        cassAlert.setService(alert.getService());
 
         final Mapper<models.cassandra.Alert> mapper = _mappingManager.mapper(models.cassandra.Alert.class);
         mapper.save(cassAlert);
@@ -213,15 +194,11 @@ public final class CassandraAlertRepository implements AlertRepository {
 
     private Alert convertFromCassandraAlert(final models.cassandra.Alert cassandraAlert) {
         return new DefaultAlert.Builder()
-                .setCluster(cassandraAlert.getCluster())
-                .setContext(cassandraAlert.getContext())
                 .setId(cassandraAlert.getUuid())
-                .setMetric(cassandraAlert.getMetric())
                 .setName(cassandraAlert.getName())
+                .setQuery(cassandraAlert.getQuery())
                 .setOperator(cassandraAlert.getOperator())
                 .setPeriod(Period.seconds(cassandraAlert.getPeriodInSeconds()).normalizedStandard())
-                .setService(cassandraAlert.getService())
-                .setStatistic(cassandraAlert.getStatistic())
                 .setValue(new DefaultQuantity.Builder()
                         .setValue(cassandraAlert.getQuantityValue())
                         .setUnit(cassandraAlert.getQuantityUnit())

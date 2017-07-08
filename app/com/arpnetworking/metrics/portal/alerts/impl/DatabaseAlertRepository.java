@@ -196,18 +196,14 @@ public class DatabaseAlertRepository implements AlertRepository {
             }
 
             ebeanAlert.setOrganization(models.ebean.Organization.findByOrganization(organization));
-            ebeanAlert.setCluster(alert.getCluster());
             ebeanAlert.setUuid(alert.getId());
-            ebeanAlert.setMetric(alert.getMetric());
-            ebeanAlert.setContext(alert.getContext());
             ebeanAlert.setNagiosExtension(convertToEbeanNagiosExtension(alert.getNagiosExtension()));
             ebeanAlert.setName(alert.getName());
+            ebeanAlert.setQuery(alert.getQuery());
             ebeanAlert.setOperator(alert.getOperator());
             ebeanAlert.setPeriod(alert.getPeriod().toStandardSeconds().getSeconds());
             ebeanAlert.setQuantityValue(alert.getValue().getValue());
             ebeanAlert.setQuantityUnit(alert.getValue().getUnit().orElse(null));
-            ebeanAlert.setStatistic(alert.getStatistic());
-            ebeanAlert.setService(alert.getService());
             _alertQueryGenerator.saveAlert(ebeanAlert);
             transaction.commit();
 
@@ -242,15 +238,11 @@ public class DatabaseAlertRepository implements AlertRepository {
 
     private Alert convertFromEbeanAlert(final models.ebean.Alert ebeanAlert) {
         return new DefaultAlert.Builder()
-                .setCluster(ebeanAlert.getCluster())
-                .setContext(ebeanAlert.getContext())
                 .setId(ebeanAlert.getUuid())
-                .setMetric(ebeanAlert.getMetric())
                 .setName(ebeanAlert.getName())
+                .setQuery(ebeanAlert.getQuery())
                 .setOperator(ebeanAlert.getOperator())
                 .setPeriod(Period.seconds(ebeanAlert.getPeriod()).normalizedStandard())
-                .setService(ebeanAlert.getService())
-                .setStatistic(ebeanAlert.getStatistic())
                 .setValue(new DefaultQuantity.Builder()
                         .setValue(ebeanAlert.getQuantityValue())
                         .setUnit(ebeanAlert.getQuantityUnit())
@@ -327,26 +319,12 @@ public class DatabaseAlertRepository implements AlertRepository {
         public PagedList<models.ebean.Alert> createAlertQuery(final AlertQuery query) {
             ExpressionList<models.ebean.Alert> ebeanExpressionList = Ebean.find(models.ebean.Alert.class).where();
             ebeanExpressionList = ebeanExpressionList.eq("organization.uuid", query.getOrganization().getId());
-            if (query.getCluster().isPresent()) {
-                ebeanExpressionList = ebeanExpressionList.eq("cluster", query.getCluster().get());
-            }
-            if (query.getContext().isPresent()) {
-                ebeanExpressionList = ebeanExpressionList.eq("context", query.getContext().get().toString());
-            }
-            if (query.getService().isPresent()) {
-                ebeanExpressionList = ebeanExpressionList.eq("service", query.getService().get());
-            }
 
             //TODO(deepika): Add full text search [ISSUE-11]
             if (query.getContains().isPresent()) {
                 final Junction<models.ebean.Alert> junction = ebeanExpressionList.disjunction();
                 ebeanExpressionList = junction.contains("name", query.getContains().get());
-                if (!query.getCluster().isPresent()) {
-                    ebeanExpressionList = junction.contains("cluster", query.getContains().get());
-                }
-                if (!query.getService().isPresent()) {
-                    ebeanExpressionList = junction.contains("service", query.getContains().get());
-                }
+                ebeanExpressionList = junction.contains("query", query.getContains().get());
                 ebeanExpressionList = junction.contains("metric", query.getContains().get());
                 ebeanExpressionList = junction.contains("statistic", query.getContains().get());
                 ebeanExpressionList = junction.contains("operator", query.getContains().get());

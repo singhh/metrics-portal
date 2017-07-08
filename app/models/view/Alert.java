@@ -35,14 +35,6 @@ public final class Alert {
         return _id;
     }
 
-    public void setContext(final String value) {
-        _context = value;
-    }
-
-    public String getContext() {
-        return _context;
-    }
-
     public void setName(final String value) {
         _name = value;
     }
@@ -51,36 +43,12 @@ public final class Alert {
         return _name;
     }
 
-    public void setCluster(final String value) {
-        _cluster = value;
+    public String getQuery() {
+        return _query;
     }
 
-    public String getCluster() {
-        return _cluster;
-    }
-
-    public void setService(final String value) {
-        _service = value;
-    }
-
-    public String getService() {
-        return _service;
-    }
-
-    public void setMetric(final String value) {
-        _metric = value;
-    }
-
-    public String getMetric() {
-        return _metric;
-    }
-
-    public void setStatistic(final String value) {
-        _statistic = value;
-    }
-
-    public String getStatistic() {
-        return _statistic;
+    public void setQuery(final String query) {
+        _query = query;
     }
 
     public void setPeriod(final String value) {
@@ -121,12 +89,8 @@ public final class Alert {
                 .add("id", Integer.toHexString(System.identityHashCode(this)))
                 .add("class", this.getClass())
                 .add("Id", _id)
-                .add("Context", _context)
                 .add("Name", _name)
-                .add("Cluster", _cluster)
-                .add("Service", _service)
-                .add("Metric", _metric)
-                .add("Statistic", _statistic)
+                .add("Query", _query)
                 .add("Period", _period)
                 .add("Operator", _operator)
                 .add("Value", _value)
@@ -135,12 +99,8 @@ public final class Alert {
     }
 
     private String _id;
-    private String _context;
     private String _name;
-    private String _cluster;
-    private String _service;
-    private String _metric;
-    private String _statistic;
+    private String _query;
     private String _period;
     private String _operator;
     private Quantity _value;

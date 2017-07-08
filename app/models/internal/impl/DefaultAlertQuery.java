@@ -52,24 +52,6 @@ public final class DefaultAlertQuery implements AlertQuery {
     }
 
     @Override
-    public AlertQuery context(final Optional<Context> context) {
-        _context = context;
-        return this;
-    }
-
-    @Override
-    public AlertQuery cluster(final Optional<String> cluster) {
-        _cluster = cluster;
-        return this;
-    }
-
-    @Override
-    public AlertQuery service(final Optional<String> service) {
-        _service = service;
-        return this;
-    }
-
-    @Override
     public AlertQuery limit(final int limit) {
         _limit = limit;
         return this;
@@ -97,21 +79,6 @@ public final class DefaultAlertQuery implements AlertQuery {
     }
 
     @Override
-    public Optional<Context> getContext() {
-        return _context;
-    }
-
-    @Override
-    public Optional<String> getCluster() {
-        return _cluster;
-    }
-
-    @Override
-    public Optional<String> getService() {
-        return _service;
-    }
-
-    @Override
     public int getLimit() {
         return _limit;
     }
@@ -128,9 +95,6 @@ public final class DefaultAlertQuery implements AlertQuery {
                 .add("class", this.getClass())
                 .add("Repository", _repository)
                 .add("Contains", _contains)
-                .add("Context", _context)
-                .add("Cluster", _cluster)
-                .add("Service", _service)
                 .add("Limit", _limit)
                 .add("Offset", _offset)
                 .toString();
@@ -139,9 +103,6 @@ public final class DefaultAlertQuery implements AlertQuery {
     private final AlertRepository _repository;
     private final Organization _organization;
     private Optional<String> _contains = Optional.empty();
-    private Optional<Context> _context = Optional.empty();
-    private Optional<String> _cluster = Optional.empty();
-    private Optional<String> _service = Optional.empty();
     private int _limit = DEFAULT_LIMIT;
     private Optional<Integer> _offset = Optional.empty();
 

@@ -18,36 +18,19 @@
     <div class="row-fluid">
         <div class="col-md-12">
             <h2>Edit Alert</h2>
-            <div class="col-md-12 col-sm-12 col-lg-12">
+            <div class="col-md-4 col-sm-12 col-lg-4">
                 <form role="form" class="container-fluid form-horizontal col-md-8 col-sm-12 col-lg-6">
                     <div class="form-group">
                         <label for="nameInput">Name</label>
                         <input class="form-control" data-bind="value: name" type="text" id="nameInput" placeholder="Name">
                     </div>
                     <div class="form-group">
-                        <label for="contextInput">Context</label>
-                        <select class="form-control" data-bind="options: contexts, optionsText: 'text', optionsValue: 'value', value: context" id="contextInput"></select>
-                        <!--<input class="form-control" data-bind="value: operator" type="text" id="operatorInput" placeholder="Operator">-->
+                        <label for="queryInput">Query</label>
+                        <input class="form-control" data-bind="value: query" type="text" id="queryInput" placeholder="SELECT FROM 1 HOUR AGO ...">
                     </div>
                     <div class="form-group">
-                        <label for="metricInput">Metric</label>
-                        <input class="form-control" data-bind="value: metric" type="text" id="metricInput" placeholder="Metric">
-                    </div>
-                    <div class="form-group">
-                        <label for="serviceInput">Service</label>
-                        <input class="form-control" data-bind="value: service" type="text" id="serviceInput" placeholder="Service">
-                    </div>
-                    <div class="form-group">
-                        <label for="clusterInput">Cluster</label>
-                        <input class="form-control" data-bind="value: cluster" type="text" id="clusterInput" placeholder="Cluster">
-                    </div>
-                    <div class="form-group">
-                        <label for="statisticInput">Statistic</label>
-                        <input class="form-control" data-bind="value: statistic" type="text" id="statisticInput" placeholder="Statistic">
-                    </div>
-                    <div class="form-group">
-                        <label for="periodInput">Period</label>
-                        <input class="form-control" data-bind="value: period" type="text" id="periodInput" placeholder="Period">
+                        <label for="periodInput">Check Interval</label>
+                        <input class="form-control" data-bind="value: period" type="text" id="periodInput" placeholder="PT1M">
                     </div>
                     <div class="form-group">
                         <label for="operatorInput">Operator</label>

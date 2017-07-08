@@ -162,9 +162,6 @@ public class AlertController extends Controller {
         // Build a host repository query
         final AlertQuery query = _alertRepository.createQuery(Organization.DEFAULT)
                 .contains(argContains)
-                .context(argContext)
-                .service(argService)
-                .cluster(argCluster)
                 .limit(argLimit)
                 .offset(argOffset);
 
@@ -239,16 +236,12 @@ public class AlertController extends Controller {
 
     private models.view.Alert internalModelToViewModel(final Alert alert) {
         final models.view.Alert viewAlert = new models.view.Alert();
-        viewAlert.setCluster(alert.getCluster());
-        viewAlert.setContext(alert.getContext().toString());
         viewAlert.setExtensions(mergeExtensions(alert.getNagiosExtension()));
         viewAlert.setId(alert.getId().toString());
-        viewAlert.setMetric(alert.getMetric());
         viewAlert.setName(alert.getName());
+        viewAlert.setQuery(alert.getQuery());
         viewAlert.setOperator(alert.getOperator().toString());
         viewAlert.setPeriod(alert.getPeriod().toString());
-        viewAlert.setService(alert.getService());
-        viewAlert.setStatistic(alert.getStatistic());
         final models.view.Quantity viewValue = new models.view.Quantity();
         viewValue.setValue(alert.getValue().getValue());
         if (alert.getValue().getUnit().isPresent()) {
@@ -281,19 +274,13 @@ public class AlertController extends Controller {
     private Alert convertToInternalAlert(final models.view.Alert viewAlert) throws IOException {
         try {
             final DefaultAlert.Builder alertBuilder = new DefaultAlert.Builder()
-                    .setCluster(viewAlert.getCluster())
-                    .setMetric(viewAlert.getMetric())
                     .setName(viewAlert.getName())
-                    .setService(viewAlert.getService())
-                    .setStatistic(viewAlert.getStatistic());
+                    .setQuery(viewAlert.getQuery());
             if (viewAlert.getValue() != null) {
                 alertBuilder.setValue(convertToInternalQuantity(viewAlert.getValue()));
             }
             if (viewAlert.getId() != null) {
                 alertBuilder.setId(UUID.fromString(viewAlert.getId()));
-            }
-            if (viewAlert.getContext() != null) {
-                alertBuilder.setContext(Context.valueOf(viewAlert.getContext()));
             }
             if (viewAlert.getOperator() != null) {
                 alertBuilder.setOperator(Operator.valueOf(viewAlert.getOperator()));

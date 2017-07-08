@@ -18,7 +18,6 @@ package models.ebean;
 import com.avaje.ebean.Model;
 import com.avaje.ebean.annotation.CreatedTimestamp;
 import com.avaje.ebean.annotation.UpdatedTimestamp;
-import models.internal.Context;
 import models.internal.Operator;
 
 import java.sql.Timestamp;
@@ -32,6 +31,7 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
+import javax.persistence.Lob;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToOne;
 import javax.persistence.Table;
@@ -70,21 +70,9 @@ public class Alert extends Model {
     @Column(name = "name")
     private String name;
 
-    @Column(name = "cluster")
-    private String cluster;
-
-    @Column(name = "service")
-    private String service;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "context")
-    private Context context;
-
-    @Column(name = "metric")
-    private String metric;
-
-    @Column(name = "statistic")
-    private String statistic;
+    @Lob
+    @Column(name = "query")
+    private String query;
 
     @Column(name = "period_in_seconds")
     private int periodInSeconds;
@@ -154,44 +142,12 @@ public class Alert extends Model {
         name = value;
     }
 
-    public String getCluster() {
-        return cluster;
+    public String getQuery() {
+        return query;
     }
 
-    public void setCluster(final String value) {
-        cluster = value;
-    }
-
-    public String getService() {
-        return service;
-    }
-
-    public void setService(final String value) {
-        service = value;
-    }
-
-    public Context getContext() {
-        return context;
-    }
-
-    public void setContext(final Context value) {
-        context = value;
-    }
-
-    public String getMetric() {
-        return metric;
-    }
-
-    public void setMetric(final String value) {
-        metric = value;
-    }
-
-    public String getStatistic() {
-        return statistic;
-    }
-
-    public void setStatistic(final String value) {
-        statistic = value;
+    public void setQuery(final String value) {
+        query = value;
     }
 
     public int getPeriod() {
