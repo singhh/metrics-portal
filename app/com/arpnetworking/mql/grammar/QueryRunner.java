@@ -2,10 +2,10 @@ package com.arpnetworking.mql.grammar;
 
 import com.arpnetworking.kairos.client.KairosDbClient;
 import com.arpnetworking.kairos.client.models.MetricsQuery;
-import com.arpnetworking.kairos.client.models.MetricsQueryResponse;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.LinkedHashMultimap;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import org.joda.time.DateTime;
@@ -34,19 +34,74 @@ public class QueryRunner extends MqlBaseVisitor<Object> {
     public CompletionStage<JsonNode> visitStatement(final MqlParser.StatementContext ctx) {
         final List<MqlParser.StageContext> stages = ctx.stage();
         // Build each stage and chain them together
-        stages.forEach(this::visit);
+        int x = 0;
+        for (MqlParser.StageContext stage : stages) {
+            _previousStage = visitStage(stage);
+        }
 
-        return _previousQuery.thenApply(_mapper::valueToTree);
+        return _previousStage.execute().thenApply(TimeSeriesResult::getNode).thenApply(_mapper::valueToTree);
 //        return CompletableFuture.completedFuture(JsonNodeFactory.instance.objectNode().put("foo", "bar"));
     }
 
     @Override
-    public Object visitStage(MqlParser.StageContext ctx) {
-        return super.visitStage(ctx);
+    public StageExecution visitStage(final MqlParser.StageContext ctx) {
+        final StageExecution execution;
+        if (ctx.select() != null) {
+            execution = visitSelect(ctx.select());
+        } else if (ctx.agg() != null) {
+            execution = visitAgg(ctx.agg());
+        } else {
+            execution = null;
+        }
+        if (ctx.timeSeriesReference() != null) {
+            final String name = visitTimeSeriesReference(ctx.timeSeriesReference());
+            final StageExecution previous = _stages.put(name, execution);
+            if (previous != null) {
+                throw new IllegalStateException("Multiple stages with name '" + name + "' found");
+            }
+        }
+
+        return execution;
     }
 
     @Override
-    public CompletionStage<MetricsQueryResponse> visitSelect(MqlParser.SelectContext ctx) {
+    public StageExecution visitAgg(final MqlParser.AggContext ctx) {
+        //TODO: build it
+        final UnionAggregator.Builder builder = new UnionAggregator.Builder();
+        if (ctx.ofList() != null) {
+            final List<StageExecution> dependencies = visitOfList(ctx.ofList());
+            for (StageExecution dependency : dependencies) {
+                builder.addDependency(dependency);
+            }
+        } else {
+            builder.addDependency(_previousStage);
+        }
+
+        return builder.build();
+//        return null;
+    }
+
+    @Override
+    public List<StageExecution> visitOfList(final MqlParser.OfListContext ctx) {
+        final List<StageExecution> ofList = Lists.newArrayList();
+        final List<MqlParser.TimeSeriesReferenceContext> references = ctx.timeSeriesReference();
+        for (MqlParser.TimeSeriesReferenceContext reference : references) {
+            final String name = reference.Identifier().getText();
+            if (!_stages.containsKey(name)) {
+                throw new IllegalStateException("Referenced stage '" + name + "' does not exist for aggregation");
+            }
+            ofList.add(_stages.get(name));
+        }
+        return ofList;
+    }
+
+    @Override
+    public String visitTimeSeriesReference(final MqlParser.TimeSeriesReferenceContext ctx) {
+        return ctx.Identifier().getText();
+    }
+
+    @Override
+    public SelectExecution visitSelect(MqlParser.SelectContext ctx) {
         // TODO: get dependent queries
         // requiredQueries = computeDepenencies
 
@@ -55,20 +110,24 @@ public class QueryRunner extends MqlBaseVisitor<Object> {
         // Wrap the query binding
         // dependenciesComplete.thenApply(bindAndRun(query));
 
-        final String metricName = ctx.metricName().Identifier().getText();
-        final TimeRange timeRange = visitTimeRange(ctx.timeRange());
-        final MetricsQuery query = new MetricsQuery.Builder()
-                .setStartTime(timeRange._start)
-                .setEndTime(timeRange._end)
-                .addMetric(new MetricsQuery.Metric.Builder()
-                        .setName(metricName)
-                        .setTags(visitWhereClause(ctx.whereClause()))
-                        .build())
-                .build();
+        final MetricsQuery.Builder query = new MetricsQuery.Builder();
 
-        final CompletionStage<MetricsQueryResponse> response = _kairosDbClient.queryMetrics(query);
-        _previousQuery = response;
-        return response;
+        final String metricName = ctx.metricName().Identifier().getText();
+        if (ctx.timeRange() != null) {
+            final TimeRange timeRange = visitTimeRange(ctx.timeRange());
+            query.setStartTime(timeRange._start)
+                    .setEndTime(timeRange._end);
+            _timeRange = timeRange;
+        }
+
+        query.addMetric(new MetricsQuery.Metric.Builder()
+                .setName(metricName)
+                .setTags(visitWhereClause(ctx.whereClause()))
+                .build());
+        return new SelectExecution.Builder()
+                .setQueryBuilder(query)
+                .setClient(_kairosDbClient)
+                .build();
     }
 
     @Override
@@ -193,9 +252,10 @@ public class QueryRunner extends MqlBaseVisitor<Object> {
         }
     }
 
-    private CompletionStage<MetricsQueryResponse> _previousQuery = null;
+    private StageExecution _previousStage = null;
+    private TimeRange _timeRange = null;
 
-    private final Map<String, CompletionStage<MetricsQueryResponse>> _queries = Maps.newHashMap();
+    private final Map<String, StageExecution> _stages = Maps.newHashMap();
     private final KairosDbClient _kairosDbClient;
     private final ObjectMapper _mapper;
 

@@ -1,5 +1,6 @@
 grammar Mql;
 
+/* SELECT syntax */
 SELECT : [Ss][Ee][Ll][Ee][Cc][Tt] ;
 FROM : [Ff][Rr][Oo][Mm] ;
 TO : [Tt][Oo] ;
@@ -10,6 +11,10 @@ GROUP : [Gg][Rr][Oo][Uu][Pp] ;
 BY : [Bb][Yy] ;
 WHERE : [Ww][Hh][Ee][Rr][Ee] ;
 AND : [Aa][Nn][Dd] ;
+
+/* AGG syntax */
+AGG : [Aa][Gg][Gg] ;
+OF : [Oo][Ff] ;
 
 SECONDS : [Ss][Ee][Cc][Oo][Nn][Dd][Ss] ;
 SECOND : [Ss][Ee][Cc][Oo][Nn][Dd] ;
@@ -69,9 +74,23 @@ ErrorCharacter : . ;
 
 statement : stage (PIPE stage)* EOF;
 
-stage : select ;
+stage : (select | agg) (AS? timeSeriesReference)? ;
 
-select : FROM timeRange SELECT metricName whereClause? groupByClause? (AS? timeSeriesReference)?;
+agg : AGG aggFunctionName aggArgList ofList? ;
+
+aggFunctionName : Identifier ;
+
+aggArgList : aggArgPair* ;
+
+aggArgPair : argName EQUALS argValue ;
+
+argName : Identifier ;
+
+ofList : OF timeSeriesReference (COMMA timeSeriesReference)* ;
+
+argValue : expression ;
+
+select : (FROM timeRange)? SELECT metricName whereClause? groupByClause?;
 
 timeSeriesReference : Identifier ;
 
