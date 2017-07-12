@@ -118,6 +118,9 @@ public class QueryRunner extends MqlBaseVisitor<Object> {
             query.setStartTime(timeRange._start)
                     .setEndTime(timeRange._end);
             _timeRange = timeRange;
+        } else {
+            query.setStartTime(_timeRange._start)
+                    .setEndTime(_timeRange._end);
         }
 
         query.addMetric(new MetricsQuery.Metric.Builder()
