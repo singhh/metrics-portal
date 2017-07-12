@@ -1,5 +1,6 @@
 package com.arpnetworking.kairos.client.models;
 
+import akka.stream.impl.fusing.GroupBy;
 import com.arpnetworking.commons.builder.OvalBuilder;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
@@ -143,6 +144,8 @@ public final class MetricsQuery {
         private final Multimap<String, String> _tags;
         @JsonProperty("aggregators")
         private final List<Aggregator> _aggregators;
+        @JsonProperty("group_by")
+        private final List<GroupBy> _groupBy;
 
         public static final class Builder extends OvalBuilder<Metric> {
             public static Builder from(final Metric metric) {
@@ -203,6 +206,17 @@ public final class MetricsQuery {
                 return this;
             }
 
+            /**
+             * Add a group by. Cannot be null
+             *
+             * @param value the aggregator to add
+             * @return this {@link Builder}
+             */
+            public Builder addGroupBy(final GroupBy value) {
+                _groupBy.add(value);
+                return this;
+            }
+
             public String getName() {
                 return _name;
             }
@@ -221,6 +235,9 @@ public final class MetricsQuery {
 
             @NotNull
             private List<Aggregator> _aggregators = Lists.newArrayList();
+
+            @NotNull
+            private List<GroupBy> _groupBy = Lists.newArrayList();
 
             @NotNull
             private Multimap<String, String> _tags = LinkedHashMultimap.create();
