@@ -11,6 +11,7 @@ import net.sf.oval.constraint.NotNull;
 import org.joda.time.DateTime;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Model class to represent a metrics query.
@@ -96,6 +97,27 @@ public final class MetricsQuery {
             return this;
         }
 
+        public Builder copy() {
+            return new Builder().setStartTime(_startTime)
+                    .setEndTime(_endTime)
+                    .setMetrics(_metrics.stream()
+                            .map(Metric.Builder::from)
+                            .map(Metric.Builder::build)
+                            .collect(Collectors.toList()));
+        }
+
+        public DateTime getStartTime() {
+            return _startTime;
+        }
+
+        public DateTime getEndTime() {
+            return _endTime;
+        }
+
+        public List<Metric> getMetrics() {
+            return _metrics;
+        }
+
         @NotNull
         private DateTime _startTime;
         @NotNull
@@ -111,15 +133,23 @@ public final class MetricsQuery {
     public static final class Metric {
         private Metric(final Builder builder) {
             _name = builder._name;
-            _tags = builder._tags;
+            _tags = LinkedHashMultimap.create(builder._tags);
+            _aggregators = Lists.newArrayList(builder._aggregators);
         }
 
         @JsonProperty("name")
         private final String _name;
         @JsonProperty("tags")
         private final Multimap<String, String> _tags;
+        @JsonProperty("aggregators")
+        private final List<Aggregator> _aggregators;
 
         public static final class Builder extends OvalBuilder<Metric> {
+            public static Builder from(final Metric metric) {
+                return new Builder().setTags(LinkedHashMultimap.create(metric._tags))
+                        .setName(metric._name);
+            }
+
             /**
              * Public constructor.
              */
@@ -150,12 +180,108 @@ public final class MetricsQuery {
                 return this;
             }
 
+            /**
+             * Sets the aggregators. Cannot be null
+             *
+             * @param value the aggregators
+             * @return this {@link Builder}
+             */
+            public Builder setAggregators(final List<Aggregator> value) {
+                _aggregators.clear();
+                _aggregators.addAll(value);
+                return this;
+            }
+
+            /**
+             * Add an aggregator. Cannot be null
+             *
+             * @param value the aggregator to add
+             * @return this {@link Builder}
+             */
+            public Builder addAggregator(final Aggregator value) {
+                _aggregators.add(value);
+                return this;
+            }
+
+            public String getName() {
+                return _name;
+            }
+
+            public Multimap<String, String> getTags() {
+                return _tags;
+            }
+
+            public List<Aggregator> getAggregators() {
+                return _aggregators;
+            }
+
             @NotNull
             @NotEmpty
             private String _name;
 
             @NotNull
+            private List<Aggregator> _aggregators = Lists.newArrayList();
+
+            @NotNull
             private Multimap<String, String> _tags = LinkedHashMultimap.create();
+        }
+    }
+
+    public static final class Aggregator {
+        private Aggregator(final Builder builder) {
+            _name = builder._name;
+            _alignSampling = builder._alignSampling;
+            _sampling = builder._sampling;
+        }
+
+        @JsonProperty("name")
+        private final String _name;
+        @JsonProperty("align_sampling")
+        private final boolean _alignSampling;
+        @JsonProperty("sampling")
+        private final Sampling _sampling;
+
+        public static final class Builder extends OvalBuilder<Aggregator> {
+            public Builder() {
+                super(Aggregator::new);
+            }
+
+            /**
+             * Sets the name of the aggregator. Cannot be null or empty.
+             *
+             * @param value the name of the aggregator
+             * @return this {@link Builder}
+             */
+            public Builder setName(final String value) {
+                _name = value;
+                return this;
+            }
+            @NotNull
+            @NotEmpty
+            private String _name;
+            private boolean _alignSampling = true;
+            private Sampling _sampling = new Sampling.Builder().build();
+        }
+    }
+
+    public static final class Sampling {
+        private Sampling(final Builder builder) {
+            _unit = builder._unit;
+            _value = builder._value;
+        }
+
+        @JsonProperty("unit")
+        private final String _unit;
+        @JsonProperty("value")
+        private final int _value;
+
+        public static final class Builder extends OvalBuilder<Sampling> {
+            public Builder() {
+                super(Sampling::new);
+            }
+
+            private int _value = 1;
+            private String _unit = "minutes";
         }
     }
 }

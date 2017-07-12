@@ -87,8 +87,15 @@ public class MetricsController extends Controller {
             return CompletableFuture.completedFuture(Results.badRequest(response));
         }
         final QueryRunner queryRunner = _queryRunnerFactory.get();
-        final CompletionStage<JsonNode> response = queryRunner.visitStatement(statement);
-        return response.thenApply(Results::ok);
+        try {
+            final CompletionStage<JsonNode> response = queryRunner.visitStatement(statement);
+            return response.thenApply(Results::ok);
+        } catch (final RuntimeException ex) {
+            final ObjectNode response = Json.newObject();
+            final ArrayNode errors = response.putArray("errors");
+            errors.add(ex.getMessage());
+            return CompletableFuture.completedFuture(Results.badRequest(response));
+        }
     }
 
     private final ObjectMapper _mapper;

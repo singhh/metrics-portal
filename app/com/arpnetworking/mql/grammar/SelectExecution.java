@@ -36,6 +36,10 @@ public class SelectExecution extends BaseExecution {
     private final KairosDbClient _client;
 
     public static final class Builder extends BaseExecution.Builder<Builder, SelectExecution> {
+        public static Builder from(final SelectExecution execution) {
+            return new Builder().setClient(execution._client)
+                    .setQueryBuilder(execution._query);
+        }
         public Builder() {
             super(SelectExecution::new);
         }
@@ -60,6 +64,10 @@ public class SelectExecution extends BaseExecution {
         public Builder setQueryBuilder(final MetricsQuery.Builder value) {
             _query = value;
             return this;
+        }
+
+        public MetricsQuery.Builder getQuery() {
+            return _query;
         }
 
         @Override

@@ -8,12 +8,15 @@ import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeFieldType;
 import org.joda.time.Duration;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
@@ -66,19 +69,35 @@ public class QueryRunner extends MqlBaseVisitor<Object> {
 
     @Override
     public StageExecution visitAgg(final MqlParser.AggContext ctx) {
-        //TODO: build it
-        final UnionAggregator.Builder builder = new UnionAggregator.Builder();
+        final List<StageExecution> dependencies;
         if (ctx.ofList() != null) {
-            final List<StageExecution> dependencies = visitOfList(ctx.ofList());
-            for (StageExecution dependency : dependencies) {
-                builder.addDependency(dependency);
-            }
+            dependencies = visitOfList(ctx.ofList());
         } else {
-            builder.addDependency(_previousStage);
+            dependencies = Collections.singletonList(_previousStage);
         }
 
+        final String aggregator = ctx.aggFunctionName().Identifier().getText();
+
+        // Check to see if we can lift the aggregator to a dependent query
+        if (dependencies.size() == 1) {
+            final StageExecution dependency = dependencies.get(0);
+            if (dependency instanceof SelectExecution && LIFTABLE_AGGREGATIONS.contains(aggregator)) {
+                final SelectExecution query = (SelectExecution) dependency;
+
+                final SelectExecution.Builder builder = SelectExecution.Builder.from(query);
+
+                final List<MetricsQuery.Metric> newMetrics = builder.getQuery().getMetrics().stream()
+                        .map(MetricsQuery.Metric.Builder::from)
+                        .map(b -> b.addAggregator(new MetricsQuery.Aggregator.Builder().setName(aggregator).build()).build())
+                        .collect(Collectors.toList());
+                builder.getQuery().setMetrics(newMetrics);
+                return builder.build();
+            }
+        }
+        //TODO: build it
+        final UnionAggregator.Builder builder = new UnionAggregator.Builder();
+        dependencies.forEach(builder::addDependency);
         return builder.build();
-//        return null;
     }
 
     @Override
@@ -261,6 +280,8 @@ public class QueryRunner extends MqlBaseVisitor<Object> {
     private final Map<String, StageExecution> _stages = Maps.newHashMap();
     private final KairosDbClient _kairosDbClient;
     private final ObjectMapper _mapper;
+
+    private static final Set<String> LIFTABLE_AGGREGATIONS = Sets.newHashSet("min", "max", "merge", "percentile");
 
     private static final class TimeRange {
         private TimeRange(final DateTime start, final DateTime end) {
