@@ -1,5 +1,6 @@
 package controllers;
 
+import com.arpnetworking.kairos.client.models.MetricsQueryResponse;
 import com.arpnetworking.mql.grammar.CollectingErrorListener;
 import com.arpnetworking.mql.grammar.MqlLexer;
 import com.arpnetworking.mql.grammar.MqlParser;
@@ -88,8 +89,8 @@ public class MetricsController extends Controller {
         }
         final QueryRunner queryRunner = _queryRunnerFactory.get();
         try {
-            final CompletionStage<JsonNode> response = queryRunner.visitStatement(statement);
-            return response.thenApply(Results::ok);
+            final CompletionStage<MetricsQueryResponse> response = queryRunner.visitStatement(statement);
+            return response.<JsonNode>thenApply(_mapper::valueToTree).thenApply(Results::ok);
         } catch (final RuntimeException ex) {
             final ObjectNode response = Json.newObject();
             final ArrayNode errors = response.putArray("errors");

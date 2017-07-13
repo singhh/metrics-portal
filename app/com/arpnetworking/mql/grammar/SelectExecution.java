@@ -19,7 +19,7 @@ public class SelectExecution extends BaseExecution {
     }
 
     private static TimeSeriesResult toTimeSeriesResult(final MetricsQueryResponse response) {
-        return new TimeSeriesResult(response.getOther());
+        return new TimeSeriesResult(response);
     }
 
     private SelectExecution(final Builder builder) {

@@ -1,7 +1,9 @@
 package com.arpnetworking.mql.grammar;
 
-import com.google.common.collect.Maps;
+import com.arpnetworking.kairos.client.models.MetricsQueryResponse;
+import com.google.common.collect.Lists;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -12,14 +14,12 @@ import java.util.concurrent.CompletionStage;
 public class UnionAggregator extends BaseExecution {
     @Override
     public CompletionStage<TimeSeriesResult> executeWithDependencies(final Map<StageExecution, TimeSeriesResult> results) {
-        // TODO: implement me
-        final Map<String, Object> result = Maps.newHashMap();
-        Integer x = 0;
+        final List<MetricsQueryResponse.Query> queries = Lists.newArrayList();
         for (Map.Entry<StageExecution, TimeSeriesResult> entry : results.entrySet()) {
-            result.put(x.toString(), entry.getValue().getNode());
-            x++;
+            queries.addAll(entry.getValue().getResponse().getQueries());
         }
-        return CompletableFuture.completedFuture(new TimeSeriesResult(result));
+        final MetricsQueryResponse newResponse = new MetricsQueryResponse.Builder().setQueries(queries).build();
+        return CompletableFuture.completedFuture(new TimeSeriesResult(newResponse));
     }
 
     private UnionAggregator(final Builder builder) {

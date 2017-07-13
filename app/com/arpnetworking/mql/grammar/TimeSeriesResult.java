@@ -1,6 +1,6 @@
 package com.arpnetworking.mql.grammar;
 
-import java.util.Map;
+import com.arpnetworking.kairos.client.models.MetricsQueryResponse;
 
 /**
  * Result of a TimeSeries query stage.
@@ -8,13 +8,13 @@ import java.util.Map;
  * @author Brandon Arp (brandon dot arp at smartsheet dot com)
  */
 public class TimeSeriesResult {
-    public TimeSeriesResult(final Map<String, Object> node) {
-        _node = node;
+    public TimeSeriesResult(final MetricsQueryResponse response) {
+        _response = response;
     }
 
-    public Map<String, Object> getNode() {
-        return _node;
+    public MetricsQueryResponse getResponse() {
+        return _response;
     }
 
-    private final Map<String, Object> _node;
+    private final MetricsQueryResponse _response;
 }
