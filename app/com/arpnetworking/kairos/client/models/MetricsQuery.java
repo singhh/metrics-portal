@@ -1,17 +1,21 @@
 package com.arpnetworking.kairos.client.models;
 
-import akka.stream.impl.fusing.GroupBy;
 import com.arpnetworking.commons.builder.OvalBuilder;
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import net.sf.oval.constraint.NotEmpty;
 import net.sf.oval.constraint.NotNull;
 import org.joda.time.DateTime;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -136,20 +140,26 @@ public final class MetricsQuery {
             _name = builder._name;
             _tags = LinkedHashMultimap.create(builder._tags);
             _aggregators = Lists.newArrayList(builder._aggregators);
+            _groupBy = builder._groupBy;
         }
 
         @JsonProperty("name")
         private final String _name;
         @JsonProperty("tags")
+        @JsonInclude(JsonInclude.Include.NON_NULL)
         private final Multimap<String, String> _tags;
         @JsonProperty("aggregators")
+        @JsonInclude(JsonInclude.Include.NON_NULL)
         private final List<Aggregator> _aggregators;
         @JsonProperty("group_by")
+        @JsonInclude(JsonInclude.Include.NON_NULL)
         private final List<GroupBy> _groupBy;
 
         public static final class Builder extends OvalBuilder<Metric> {
             public static Builder from(final Metric metric) {
                 return new Builder().setTags(LinkedHashMultimap.create(metric._tags))
+                        .setAggregators(Lists.newArrayList(metric._aggregators))
+                        .setGroupBy(Lists.newArrayList(metric._groupBy))
                         .setName(metric._name);
             }
 
@@ -180,6 +190,18 @@ public final class MetricsQuery {
             public Builder setTags(final Multimap<String, String> value) {
                 _tags.clear();
                 _tags.putAll(value);
+                return this;
+            }
+
+            /**
+             * Sets the group by. Cannot be null
+             *
+             * @param value the group by clauses
+             * @return this {@link Builder}
+             */
+            public Builder setGroupBy(final List<GroupBy> value) {
+                _groupBy.clear();
+                _groupBy.addAll(value);
                 return this;
             }
 
@@ -299,6 +321,49 @@ public final class MetricsQuery {
 
             private int _value = 1;
             private String _unit = "minutes";
+        }
+    }
+
+    public static final class GroupBy {
+
+        private GroupBy(final Builder builder) {
+            _parameters = builder._parameters;
+            _name = builder._name;
+        }
+
+        @JsonAnyGetter
+        public Map<String, Object> getParameters() {
+            return _parameters;
+        }
+
+        public String getName() {
+            return _name;
+        }
+
+        private final Map<String, Object> _parameters;
+        private final String _name;
+
+        public static final class Builder extends OvalBuilder<GroupBy> {
+            public Builder() {
+                super(GroupBy::new);
+            }
+
+            public Builder setName(final String value) {
+                _name = value;
+                return this;
+            }
+
+            @JsonAnySetter
+            public Builder addParameter(final String key, final Object value) {
+                _parameters.put(key, value);
+                return this;
+            }
+
+            @NotNull
+            @NotEmpty
+            private String _name;
+            @NotNull
+            private final Map<String, Object> _parameters = Maps.newLinkedHashMap();
         }
     }
 }

@@ -145,6 +145,7 @@ public class QueryRunner extends MqlBaseVisitor<Object> {
         query.addMetric(new MetricsQuery.Metric.Builder()
                 .setName(metricName)
                 .setTags(visitWhereClause(ctx.whereClause()))
+                .setGroupBy(visitGroupByClause(ctx.groupByClause()))
                 .build());
         return new SelectExecution.Builder()
                 .setQueryBuilder(query)
@@ -163,6 +164,23 @@ public class QueryRunner extends MqlBaseVisitor<Object> {
             end = DateTime.now();
         }
         return new TimeRange(start, end);
+    }
+
+    @Override
+    public List<MetricsQuery.GroupBy> visitGroupByClause(final MqlParser.GroupByClauseContext ctx) {
+        final MetricsQuery.GroupBy.Builder groupBy = new MetricsQuery.GroupBy.Builder();
+        groupBy.setName("tag");
+        final List<String> tags = Lists.newArrayList();
+        for (final MqlParser.GroupByTermContext term : ctx.groupByTerm()) {
+            tags.add(visitGroupByTerm(term));
+        }
+        groupBy.addParameter("tags", tags);
+        return Collections.singletonList(groupBy.build());
+    }
+
+    @Override
+    public String visitGroupByTerm(final MqlParser.GroupByTermContext ctx) {
+        return ctx.Identifier().getText();
     }
 
     @Override
