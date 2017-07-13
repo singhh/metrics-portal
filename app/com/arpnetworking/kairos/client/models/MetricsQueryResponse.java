@@ -6,8 +6,6 @@ import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import net.sf.oval.constraint.NotNull;
@@ -160,8 +158,8 @@ public final class MetricsQueryResponse {
         }
 
         @JsonValue
-        private ArrayNode serialize() {
-            return JsonNodeFactory.instance.arrayNode().add(_time.getMillis()).add("foo");//_value);
+        private List<Object> serialize() {
+            return Lists.newArrayList(_time.getMillis(), _value);
         }
 
         private final DateTime _time;
