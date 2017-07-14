@@ -26,7 +26,7 @@
                     </div>
                     <div class="form-group">
                         <label for="queryInput">Query</label>
-                        <input class="form-control" data-bind="value: query" type="text" id="queryInput" placeholder="SELECT FROM 1 HOUR AGO ...">
+                        <input class="form-control" data-bind="textInput: query" type="text" id="queryInput" placeholder="SELECT FROM 1 HOUR AGO ...">
                     </div>
                     <div class="form-group">
                         <label for="periodInput">Check Interval</label>
@@ -49,8 +49,8 @@
                     <button type="submit" class="btn btn-warning" data-bind="click: cancel">Cancel</button>
                 </form>
             </div>
-            <span class="col-md-8 hidden-sm col-lg-8" style="height: 80vh">
-            </span>
+            <div class="col-md-8 hidden-sm col-lg-8" style="height: 80vh">
+            </div>
         </div>
     </div>
 </div>

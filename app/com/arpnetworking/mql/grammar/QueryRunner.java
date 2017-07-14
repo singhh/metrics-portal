@@ -72,16 +72,18 @@ public class QueryRunner extends MqlBaseVisitor<Object> {
         final List<StageExecution> dependencies;
         if (ctx.ofList() != null) {
             dependencies = visitOfList(ctx.ofList());
-        } else {
+        } else if (_previousStage != null) {
             dependencies = Collections.singletonList(_previousStage);
+        } else {
+            dependencies = Collections.emptyList();
         }
 
-        final String aggregator = ctx.aggFunctionName().Identifier().getText();
+        final String aggregator = ctx.aggFunctionName().Identifier().getText().toLowerCase();
 
         // Check to see if we can lift the aggregator to a dependent query
-        if (dependencies.size() == 1) {
+        if (dependencies.size() >= 1) {
             final StageExecution dependency = dependencies.get(0);
-            if (dependency instanceof SelectExecution && LIFTABLE_AGGREGATIONS.contains(aggregator)) {
+            if (dependencies.size() == 1 && dependency instanceof SelectExecution && LIFTABLE_AGGREGATIONS.contains(aggregator)) {
                 final SelectExecution query = (SelectExecution) dependency;
 
                 final SelectExecution.Builder builder = SelectExecution.Builder.from(query);
@@ -92,12 +94,16 @@ public class QueryRunner extends MqlBaseVisitor<Object> {
                         .collect(Collectors.toList());
                 builder.getQuery().setMetrics(newMetrics);
                 return builder.build();
+            } else {
+                if ("union".equals(aggregator)) {
+                    final UnionAggregator.Builder builder = new UnionAggregator.Builder();
+                    dependencies.forEach(builder::addDependency);
+                    return builder.build();
+                }
             }
+            throw new IllegalArgumentException("Unknown aggregator '" + aggregator + "'");
         }
-        //TODO: build it
-        final UnionAggregator.Builder builder = new UnionAggregator.Builder();
-        dependencies.forEach(builder::addDependency);
-        return builder.build();
+        throw new IllegalStateException("Aggregator '" + aggregator + "' does not have any inputs");
     }
 
     @Override

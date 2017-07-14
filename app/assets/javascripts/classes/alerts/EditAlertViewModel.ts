@@ -34,7 +34,7 @@ class OperatorOption {
 class EditAlertViewModel {
     id = ko.observable<string>("");
     name = ko.observable<string>("");
-    query = ko.observable<string>("from 2 hours ago to now select elapsed");
+    query = ko.observable<string>("from 2 hours ago to now select elapsed").extend({ rateLimit: { timeout: 500, method: "notifyWhenChangesStop" } });
     period = ko.observable<string>("PT1M");
     operator = ko.observable<string>("GREATER_THAN");
     value = ko.observable<number>(0);
@@ -49,7 +49,7 @@ class EditAlertViewModel {
     ];
 
     constructor() {
-        this.name.subscribe((newValue) => this.queryChanged());
+        this.query.subscribe((newValue) => this.queryChanged(newValue));
     }
 
     activate(id: String) {
@@ -73,8 +73,8 @@ class EditAlertViewModel {
         });
     }
 
-    queryChanged(): void {
-        console.log("value changed: ", this.query());
+    queryChanged(newValue: string): void {
+        console.log("value changed, new value: ", newValue);
     }
 
     save(): void {
