@@ -94,7 +94,12 @@ public class MetricsController extends Controller {
         } catch (final RuntimeException ex) {
             final ObjectNode response = Json.newObject();
             final ArrayNode errors = response.putArray("errors");
-            errors.add(ex.getMessage());
+            if (ex.getMessage() != null) {
+                errors.add(ex.getMessage());
+            } else {
+                errors.add(ex.toString());
+                LOGGER.error().setThrowable(ex).log();
+            }
             return CompletableFuture.completedFuture(Results.badRequest(response));
         }
     }

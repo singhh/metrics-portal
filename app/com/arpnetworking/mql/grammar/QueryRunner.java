@@ -142,11 +142,17 @@ public class QueryRunner extends MqlBaseVisitor<Object> {
                     .setEndTime(_timeRange._end);
         }
 
-        query.addMetric(new MetricsQuery.Metric.Builder()
-                .setName(metricName)
-                .setTags(visitWhereClause(ctx.whereClause()))
-                .setGroupBy(visitGroupByClause(ctx.groupByClause()))
-                .build());
+        final MetricsQuery.Metric.Builder metricBuilder = new MetricsQuery.Metric.Builder()
+                .setName(metricName);
+
+        if (ctx.whereClause() != null) {
+            metricBuilder.setTags(visitWhereClause(ctx.whereClause()));
+        }
+        if (ctx.groupByClause() != null) {
+            metricBuilder.setGroupBy(visitGroupByClause(ctx.groupByClause()));
+        }
+
+        query.addMetric(metricBuilder.build());
         return new SelectExecution.Builder()
                 .setQueryBuilder(query)
                 .setClient(_kairosDbClient)
