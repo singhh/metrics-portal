@@ -20,6 +20,7 @@ import $ = require('jquery');
 import Operator = require("./Operator");
 import Quantity = require("../Quantity");
 import uuid = require('../Uuid');
+import flotr = require('flotr2');
 
 class OperatorOption {
     text: string;
@@ -31,6 +32,18 @@ class OperatorOption {
     }
 }
 
+class QueryResponse {
+    queries: Query[];
+}
+
+class Query {
+    results: Results[];
+}
+
+class Results {
+    values: number[]
+}
+
 class EditAlertViewModel {
     id = ko.observable<string>("");
     name = ko.observable<string>("");
@@ -39,6 +52,7 @@ class EditAlertViewModel {
     operator = ko.observable<string>("GREATER_THAN");
     value = ko.observable<number>(0);
     valueUnit = ko.observable<string>(null);
+    container: HTMLElement;
     operators = [
         new OperatorOption("<", "LESS_THAN"),
         new OperatorOption("<=", "LESS_THAN_OR_EQUAL_TO"),
@@ -59,6 +73,9 @@ class EditAlertViewModel {
             this.id(uuid.v4());
         }
     }
+    compositionComplete() {
+        this.container = document.getElementById('graph');
+    }
 
     loadAlert(id: String): void {
         $.getJSON("/v1/alerts/" + id, {}, (data) => {
@@ -75,6 +92,56 @@ class EditAlertViewModel {
 
     queryChanged(newValue: string): void {
         console.log("value changed, new value: ", newValue);
+        this.executeQuery(newValue);
+    }
+
+    executeQuery(query: string): any {
+        $.ajax({
+            type: 'POST',
+            url: '/v1/metrics/query',
+            contentType: "application/json",
+            dataType: "json",
+            data: JSON.stringify({'query': query}),
+            success: (response) => this.queryDataLoad(response)
+        });
+    }
+
+    queryDataLoad(response: QueryResponse) {
+        console.log(response);
+        var series = [];
+        // var response : QueryResponse = JSON.parse(data)
+        response.queries.forEach((query) => {
+            query.results.forEach((result) => {
+                series.push(result.values);
+            });
+        });
+
+        if (this.container != null) {
+            flotr.draw(this.container, series, {
+                // yaxis: {
+                //     max: graphMax,
+                //     min: graphMin
+                // },
+                xaxis: {
+                    mode: 'time',
+                    noTicks: 3,
+                    // min: graphStart,
+                    // max: graphEnd,
+                    timeMode: "local"
+
+                },
+                title: 'Backtesting',
+                HtmlText: true,
+                mouse: {
+                    track: true,
+                    sensibility: 8,
+                    radius: 15
+                },
+                legend: {
+                    show: false
+                }
+            });
+        }
     }
 
     save(): void {
