@@ -107,7 +107,6 @@ class EditAlertViewModel {
 
     queryDataLoad(response: QueryResponse) {
         var series = [];
-        // var response : QueryResponse = JSON.parse(data)
         response.queries.forEach((query) => {
             query.results.forEach((result) => {
                 series.push(result.values);
@@ -116,8 +115,8 @@ class EditAlertViewModel {
 
         let svg = d3.select(this.container);
         let margin = {top: 20, right: 80, bottom: 30, left: 50};
-        let width = Number(svg.attr("width")) - margin.left - margin.right;
-        let height = Number(svg.attr("height")) - margin.top - margin.bottom;
+        let width = svg.node().getBoundingClientRect().width - margin.left - margin.right;
+        let height = svg.node().getBoundingClientRect().height - margin.top - margin.bottom;
         let g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
         let x = d3.scaleTime()
             .rangeRound([0, width]);
@@ -132,9 +131,9 @@ class EditAlertViewModel {
 
         g.append("g")
             .attr("transform", "translate(0," + height + ")")
-            .call(d3.axisBottom(x))
-            .select(".domain")
-            .remove();
+            .call(d3.axisBottom(x));
+            // .select(".domain")
+            // .remove();
 
         g.append("g")
             .call(d3.axisLeft(y))
