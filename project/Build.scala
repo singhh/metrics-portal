@@ -87,7 +87,7 @@ object ApplicationBuild extends Build {
       "org.postgresql" % "postgresql" % "9.4-1206-jdbc42",
       "org.webjars" % "bean" % "1.0.14",
       "org.webjars" % "bootstrap" % "3.2.0",
-      "org.webjars" % "d3js" % "3.4.8",
+      "org.webjars.npm" % "d3" % "4.9.1",
       "org.webjars" % "durandal" % "2.1.0-2",
       "org.webjars" % "flotr2" % "d43f8566e8",
       "org.webjars" % "font-awesome" % "4.3.0-2",
@@ -258,9 +258,7 @@ object ApplicationBuild extends Build {
       JsEngineKeys.engineType := JsEngineKeys.EngineType.Node,
       routesGenerator := InjectedRoutesGenerator,
 
-      TypescriptKeys.moduleKind := "AMD",
-      TypescriptKeys.typingsFile := some(file("typings/index.d.ts")),
-
+      TypescriptKeys.configFile := "tsconfig.json",
 
       mainConfig := "start_app",
       mainModule := "start_app",

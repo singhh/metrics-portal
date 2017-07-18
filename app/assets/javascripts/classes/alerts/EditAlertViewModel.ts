@@ -21,6 +21,7 @@ import Operator = require("./Operator");
 import Quantity = require("../Quantity");
 import uuid = require('../Uuid');
 import flotr = require('flotr2');
+import d3 = require('d3');
 
 class OperatorOption {
     text: string;
@@ -79,7 +80,6 @@ class EditAlertViewModel {
 
     loadAlert(id: String): void {
         $.getJSON("/v1/alerts/" + id, {}, (data) => {
-            console.log(data);
             this.id(data.id);
             this.name(data.name);
             this.query(data.query);
@@ -91,7 +91,6 @@ class EditAlertViewModel {
     }
 
     queryChanged(newValue: string): void {
-        console.log("value changed, new value: ", newValue);
         this.executeQuery(newValue);
     }
 
@@ -107,7 +106,6 @@ class EditAlertViewModel {
     }
 
     queryDataLoad(response: QueryResponse) {
-        console.log(response);
         var series = [];
         // var response : QueryResponse = JSON.parse(data)
         response.queries.forEach((query) => {
@@ -116,32 +114,70 @@ class EditAlertViewModel {
             });
         });
 
-        if (this.container != null) {
-            flotr.draw(this.container, series, {
-                // yaxis: {
-                //     max: graphMax,
-                //     min: graphMin
-                // },
-                xaxis: {
-                    mode: 'time',
-                    noTicks: 3,
-                    // min: graphStart,
-                    // max: graphEnd,
-                    timeMode: "local"
+        let svg = d3.select(this.container);
+        let margin = {top: 20, right: 80, bottom: 30, left: 50};
+        let width = Number(svg.attr("width")) - margin.left - margin.right;
+        let height = Number(svg.attr("height")) - margin.top - margin.bottom;
+        let g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+        let x = d3.scaleTime()
+            .rangeRound([0, width]);
 
-                },
-                title: 'Backtesting',
-                HtmlText: true,
-                mouse: {
-                    track: true,
-                    sensibility: 8,
-                    radius: 15
-                },
-                legend: {
-                    show: false
-                }
-            });
-        }
+        let y = d3.scaleLinear()
+            .rangeRound([height, 0]);
+
+        let line = d3.line()
+            .x(function(d) { return x(d[0]); })
+            .y(function(d) { return y(d[1]); });
+
+
+        g.append("g")
+            .attr("transform", "translate(0," + height + ")")
+            .call(d3.axisBottom(x))
+            .select(".domain")
+            .remove();
+
+        g.append("g")
+            .call(d3.axisLeft(y))
+            .append("text")
+            .attr("fill", "#000")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 6)
+            .attr("dy", "0.71em")
+            .attr("text-anchor", "end")
+            .text("Price ($)");
+
+
+        // if (this.container != null) {
+        //     flotr.draw(this.container, series, {
+        //         yaxis: {
+        //         //     max: graphMax,
+        //         //     min: graphMin
+        //             autoscale: true,
+        //             // autoscaleMargin: 10,
+        //         },
+        //         xaxis: {
+        //             mode: 'time',
+        //             noTicks: 3,
+        //             // min: graphStart,
+        //             // max: graphEnd,
+        //             timeMode: "local"
+        //
+        //         },
+        //         title: 'Backtesting',
+        //         HtmlText: true,
+        //         mouse: {
+        //             track: true,
+        //             sensibility: 8,
+        //             radius: 15,
+        //             relative: true,
+        //             crosshair: 'y',
+        //             trackFormatter: (descriptor: any) => { return descriptor.y}
+        //         },
+        //         legend: {
+        //             show: true
+        //         }
+        //     });
+        // }
     }
 
     save(): void {

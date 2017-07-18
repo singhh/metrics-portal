@@ -15,8 +15,8 @@ public class UnionAggregator extends BaseExecution {
     @Override
     public CompletionStage<TimeSeriesResult> executeWithDependencies(final Map<StageExecution, TimeSeriesResult> results) {
         final List<MetricsQueryResponse.Query> queries = Lists.newArrayList();
-        for (Map.Entry<StageExecution, TimeSeriesResult> entry : results.entrySet()) {
-            queries.addAll(entry.getValue().getResponse().getQueries());
+        for (final StageExecution execution : dependencies()) {
+            queries.addAll(results.get(execution).getResponse().getQueries());
         }
         final MetricsQueryResponse newResponse = new MetricsQueryResponse.Builder().setQueries(queries).build();
         return CompletableFuture.completedFuture(new TimeSeriesResult(newResponse));

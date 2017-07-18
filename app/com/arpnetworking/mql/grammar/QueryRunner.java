@@ -252,24 +252,33 @@ public class QueryRunner extends MqlBaseVisitor<Object> {
                 }
             } else {
                 sawEscape = false;
-                if (c == '\\') {
-                    b.append(c);
-                } else if (c == 'b') {
-                    b.append('\b');
-                } else if (c == 'n') {
-                    b.append('\n');
-                } else if (c == 't') {
-                    b.append('\t');
-                } else if (c == 'r') {
-                    b.append('\r');
-                } else if (c == 'f') {
-                    b.append('\f');
-                } else if (c == '\'') {
-                    b.append('\'');
-                } else if (c == '"') {
-                    b.append('"');
-                } else {
-                    throw new IllegalArgumentException("character '" + c + "' is not a valid escape");
+                switch (c) {
+                    case '\\':
+                        b.append(c);
+                        break;
+                    case 'b':
+                        b.append('\b');
+                        break;
+                    case 'n':
+                        b.append('\n');
+                        break;
+                    case 't':
+                        b.append('\t');
+                        break;
+                    case 'r':
+                        b.append('\r');
+                        break;
+                    case 'f':
+                        b.append('\f');
+                        break;
+                    case '\'':
+                        b.append('\'');
+                        break;
+                    case '"':
+                        b.append('"');
+                        break;
+                    default:
+                        throw new IllegalArgumentException("character '" + c + "' is not a valid escape");
                 }
             }
         }

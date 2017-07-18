@@ -2,12 +2,13 @@ package com.arpnetworking.mql.grammar;
 
 import com.arpnetworking.commons.builder.OvalBuilder;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 
 /**
@@ -26,7 +27,7 @@ public abstract class BaseExecution implements StageExecution {
 
     @Override
     public CompletionStage<TimeSeriesResult> execute() {
-        final ConcurrentHashMap<StageExecution, TimeSeriesResult> results = new ConcurrentHashMap<>();
+        final ConcurrentMap<StageExecution, TimeSeriesResult> results = Maps.newConcurrentMap();
         final CompletableFuture<?>[] dependencies = dependencies().stream()
                 .map(dependency -> dependency.execute().thenApply((result) -> results.put(dependency, result)))
                 .map(CompletionStage::toCompletableFuture)
