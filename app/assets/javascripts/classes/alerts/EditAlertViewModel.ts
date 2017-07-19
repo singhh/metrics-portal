@@ -40,15 +40,21 @@ class QueryResponse {
 class Query {
     results: Results[];
 }
+type Datapoint = [number, number];
 
 class Results {
-    values: number[]
+    values: Datapoint[];
+}
+
+class Series {
+    id: string;
+    values: Datapoint[];
 }
 
 class EditAlertViewModel {
     id = ko.observable<string>("");
     name = ko.observable<string>("");
-    query = ko.observable<string>("from 2 hours ago to now select elapsed").extend({ rateLimit: { timeout: 500, method: "notifyWhenChangesStop" } });
+    query = ko.observable<string>("from 2 hours ago to now select").extend({ rateLimit: { timeout: 500, method: "notifyWhenChangesStop" } });
     period = ko.observable<string>("PT1M");
     operator = ko.observable<string>("GREATER_THAN");
     value = ko.observable<number>(0);
@@ -106,45 +112,78 @@ class EditAlertViewModel {
     }
 
     queryDataLoad(response: QueryResponse) {
-        var series = [];
+        let series: Series[] = [];
+        let i = 0;
         response.queries.forEach((query) => {
             query.results.forEach((result) => {
-                series.push(result.values);
+                series.push({values: result.values, id: String(i++)});
             });
         });
 
         let svg = d3.select(this.container);
+        svg.select("g").remove();
         let margin = {top: 20, right: 80, bottom: 30, left: 50};
-        let width = svg.node().getBoundingClientRect().width - margin.left - margin.right;
-        let height = svg.node().getBoundingClientRect().height - margin.top - margin.bottom;
+        let width = 0;
+        let height = 0;
+        if (svg.node() != null) {
+            width = svg.node().getBoundingClientRect().width - margin.left - margin.right;
+            height = svg.node().getBoundingClientRect().height - margin.top - margin.bottom;
+        }
         let g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
         let x = d3.scaleTime()
             .rangeRound([0, width]);
 
         let y = d3.scaleLinear()
             .rangeRound([height, 0]);
+        let z = d3.scaleOrdinal(d3.schemeCategory10);
 
-        let line = d3.line()
-            .x(function(d) { return x(d[0]); })
-            .y(function(d) { return y(d[1]); });
+        let line = d3.line<number[]>()
+            .x((d) => { return x(d[0]); })
+            .y((d) => { return y(d[1]); });
+
+        let xrange = [d3.min(series, ts => d3.min(ts.values, d => d[0])), d3.max(series, ts => d3.max(ts.values, d => d[0]))];
+        x.domain(xrange);
+        let yrange = [d3.min(series, ts => d3.min(ts.values, d => d[1])), d3.max(series, ts => d3.max(ts.values, d => d[1]))];
+        // let yrange = [d3.min(series[0], function(d) { return d[1]; }), d3.max(series[0], function(d) { return d[1]; })];
+        y.domain(yrange);
 
 
         g.append("g")
             .attr("transform", "translate(0," + height + ")")
             .call(d3.axisBottom(x));
-            // .select(".domain")
-            // .remove();
 
         g.append("g")
             .call(d3.axisLeft(y))
-            .append("text")
-            .attr("fill", "#000")
-            .attr("transform", "rotate(-90)")
-            .attr("y", 6)
-            .attr("dy", "0.71em")
-            .attr("text-anchor", "end")
-            .text("Price ($)");
+            .append("text");
 
+        let ts = g.selectAll(".ts")
+            .data(series)
+            .enter().append("g")
+            .attr("class", "ts");
+
+        ts.append("path")
+            .attr("class", "line")
+            .attr("fill", "none")
+            .attr("d", function(d) { return line(d.values); })
+            .style("stroke", function(d) { return z(d.id); });
+
+        // ts.append("text")
+        //     .datum(function(d) { return {id: d.id, value: d.values[d.values.length - 1]}; })
+        //     .attr("transform", function(d) { return "translate(" + x(d.value.date) + "," + y(d.value.temperature) + ")"; })
+        //     .attr("x", 3)
+        //     .attr("dy", "0.35em")
+        //     .style("font", "10px sans-serif")
+        //     .text(function(d) { return d.id; });
+
+        // let care = series[0];
+        // g.append("path")
+        //     .datum(care)
+        //     .attr("fill", "none")
+        //     .attr("stroke", "steelblue")
+        //     // .attr("stroke-linejoin", "round")
+        //     // .attr("stroke-linecap", "round")
+        //     .attr("stroke-width", 1.5)
+        //     .attr("d", line);
 
         // if (this.container != null) {
         //     flotr.draw(this.container, series, {
