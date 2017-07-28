@@ -24,9 +24,10 @@
                         <label for="nameInput">Name</label>
                         <input class="form-control" data-bind="value: name" type="text" id="nameInput" placeholder="Name">
                     </div>
-                    <div class="form-group">
+                    <div class="form-group" data-bind="css: { 'has-error': queryError() != null }">
                         <label for="queryInput">Query</label>
                         <textarea class="form-control" data-bind="textInput: query" rows="3" id="queryInput" placeholder="SELECT FROM 1 HOUR AGO ..."></textarea>
+                        <span class="help-block" data-bind="text: queryError"></span>
                     </div>
                     <div class="form-group">
                         <label for="periodInput">Check Interval</label>

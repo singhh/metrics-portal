@@ -22,6 +22,8 @@ import Quantity = require("../Quantity");
 import uuid = require('../Uuid');
 import flotr = require('flotr2');
 import d3 = require('d3');
+import ErrorTextStatus = JQuery.Ajax.ErrorTextStatus;
+import jqXHR = JQuery.jqXHR;
 
 class OperatorOption {
     text: string;
@@ -51,6 +53,12 @@ class Series {
     values: Datapoint[];
 }
 
+class RangeSeries {
+    id: string;
+    minValues: Datapoint[];
+    maxValues: Datapoint[];
+}
+
 class EditAlertViewModel {
     id = ko.observable<string>("");
     name = ko.observable<string>("");
@@ -60,6 +68,7 @@ class EditAlertViewModel {
     value = ko.observable<number>(0);
     valueUnit = ko.observable<string>(null);
     container: HTMLElement;
+    queryError = ko.observable<string>(null);
     operators = [
         new OperatorOption("<", "LESS_THAN"),
         new OperatorOption("<=", "LESS_THAN_OR_EQUAL_TO"),
@@ -100,22 +109,35 @@ class EditAlertViewModel {
         this.executeQuery(newValue);
     }
 
-    executeQuery(query: string): any {
+    private executeQuery(query: string): any {
         $.ajax({
             type: 'POST',
             url: '/v1/metrics/query',
             contentType: "application/json",
             dataType: "json",
             data: JSON.stringify({'query': query}),
-            success: (response) => this.queryDataLoad(response)
+            success: (response) => this.queryDataLoad(response),
+            error: (request, status, error) => this.queryFailed(request, status, error)
         });
     }
 
-    queryDataLoad(response: QueryResponse) {
+    private queryFailed(request: jqXHR, status: ErrorTextStatus, error: string) {
+        if (request.status / 100 == 4) {
+            if (request.responseJSON != null && request.responseJSON.errors != null && request.responseJSON.errors.length > 0) {
+                this.queryError(request.responseJSON.errors[0]);
+            }
+        } else if (request.status / 100 == 5) {
+            this.queryError("An unknown error has occurred, please try again later");
+        }
+    }
+
+    private queryDataLoad(response: QueryResponse) {
+        this.queryError(null);
         let series: Series[] = [];
         let i = 0;
         response.queries.forEach((query) => {
             query.results.forEach((result) => {
+                //TODO: walk the values to look for duplicates, if duplicates create a RangeSeries from it
                 series.push({values: result.values, id: String(i++)});
             });
         });

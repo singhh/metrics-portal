@@ -95,13 +95,16 @@ public class QueryRunner extends MqlBaseVisitor<Object> {
                 builder.getQuery().setMetrics(newMetrics);
                 return builder.build();
             } else {
+                final BaseExecution.Builder<?, ?> builder;
                 if ("union".equals(aggregator)) {
-                    final UnionAggregator.Builder builder = new UnionAggregator.Builder();
-                    dependencies.forEach(builder::addDependency);
-                    return builder.build();
+                    builder = new UnionAggregator.Builder();
+                } else {
+                    throw new IllegalArgumentException("Unknown aggregator '" + aggregator + "'");
                 }
+
+                dependencies.forEach(builder::addDependency);
+                return builder.build();
             }
-            throw new IllegalArgumentException("Unknown aggregator '" + aggregator + "'");
         }
         throw new IllegalStateException("Aggregator '" + aggregator + "' does not have any inputs");
     }
@@ -202,7 +205,8 @@ public class QueryRunner extends MqlBaseVisitor<Object> {
 
     @Override
     public DateTime visitAbsoluteTime(final MqlParser.AbsoluteTimeContext ctx) {
-        return DateTime.parse(ctx.StringLiteral().getText());
+        final String toParse = visitQuotedString(ctx.quotedString());
+        return DateTime.parse(toParse);
     }
 
     @Override
@@ -286,7 +290,7 @@ public class QueryRunner extends MqlBaseVisitor<Object> {
     }
 
     @Override
-    public Object visitRelativeTime(final MqlParser.RelativeTimeContext ctx) {
+    public DateTime visitRelativeTime(final MqlParser.RelativeTimeContext ctx) {
         if (ctx.NOW() != null) {
             return DateTime.now();
         } else {
@@ -320,7 +324,7 @@ public class QueryRunner extends MqlBaseVisitor<Object> {
     private final KairosDbClient _kairosDbClient;
     private final ObjectMapper _mapper;
 
-    private static final Set<String> LIFTABLE_AGGREGATIONS = Sets.newHashSet("min", "max", "merge", "percentile");
+    private static final Set<String> LIFTABLE_AGGREGATIONS = Sets.newHashSet("min", "max", "merge", "percentile", "count", "avg");
 
     private static final class TimeRange {
         private TimeRange(final DateTime start, final DateTime end) {

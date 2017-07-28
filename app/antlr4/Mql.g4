@@ -16,6 +16,9 @@ AND : [Aa][Nn][Dd] ;
 AGG : [Aa][Gg][Gg] ;
 OF : [Oo][Ff] ;
 
+/* FILTER syntax */
+FILTER : [Ff][Ii][Ll][Tt][Ee][Rr] ;
+
 SECONDS : [Ss][Ee][Cc][Oo][Nn][Dd][Ss] ;
 SECOND : [Ss][Ee][Cc][Oo][Nn][Dd] ;
 MINUTES : [Mm][Ii][Nn][Uu][Tt][Ee][Ss] ;
@@ -76,6 +79,14 @@ statement : stage (PIPE stage)* EOF;
 
 stage : (select | agg) (AS? timeSeriesReference)? ;
 
+filter : FILTER filterFunctionName filterArgList ;
+
+filterFunctionName : Identifier ;
+
+filterArgList : filterArgPair* ;
+
+filterArgPair : argName EQUALS argValue ;
+
 agg : AGG aggFunctionName aggArgList ofList? ;
 
 aggFunctionName : Identifier ;
@@ -124,6 +135,6 @@ pointInTime : relativeTime | absoluteTime ;
 
 relativeTime : NOW | NumericLiteral timeUnit AGO ;
 
-absoluteTime : StringLiteral ;
+absoluteTime : quotedString ;
 
 metricName : Identifier ;
