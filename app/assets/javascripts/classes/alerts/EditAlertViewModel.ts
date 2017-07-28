@@ -24,6 +24,7 @@ import flotr = require('flotr2');
 import d3 = require('d3');
 import ErrorTextStatus = JQuery.Ajax.ErrorTextStatus;
 import jqXHR = JQuery.jqXHR;
+import {max} from "d3-array";
 
 class OperatorOption {
     text: string;
@@ -53,10 +54,21 @@ class Series {
     values: Datapoint[];
 }
 
+class RangeDatapoint {
+    constructor(timestamp: number, min: number, max: number) {
+        this.timestamp = timestamp;
+        this.min = min;
+        this.max = max;
+    }
+
+    timestamp: number;
+    min: number;
+    max: number;
+}
+
 class RangeSeries {
     id: string;
-    minValues: Datapoint[];
-    maxValues: Datapoint[];
+    values: RangeDatapoint[] = [];
 }
 
 class EditAlertViewModel {
@@ -117,11 +129,11 @@ class EditAlertViewModel {
             dataType: "json",
             data: JSON.stringify({'query': query}),
             success: (response) => this.queryDataLoad(response),
-            error: (request, status, error) => this.queryFailed(request, status, error)
+            error: (request, status, error) => this.queryFailed(request)
         });
     }
 
-    private queryFailed(request: jqXHR, status: ErrorTextStatus, error: string) {
+    private queryFailed(request: jqXHR) {
         if (request.status / 100 == 4) {
             if (request.responseJSON != null && request.responseJSON.errors != null && request.responseJSON.errors.length > 0) {
                 this.queryError(request.responseJSON.errors[0]);
@@ -134,11 +146,48 @@ class EditAlertViewModel {
     private queryDataLoad(response: QueryResponse) {
         this.queryError(null);
         let series: Series[] = [];
+        let rangeSeriesList: RangeSeries[] = [];
         let i = 0;
         response.queries.forEach((query) => {
             query.results.forEach((result) => {
                 //TODO: walk the values to look for duplicates, if duplicates create a RangeSeries from it
-                series.push({values: result.values, id: String(i++)});
+                let values = result.values;
+                let last = null;
+                let range = false;
+                for (let j = 0; j < values.length; j++) {
+                    if (values[j][0] == last) {
+                        range = true;
+                        break;
+                    }
+                    last = values[j][0];
+                }
+                if (!range) {
+                    series.push({values: result.values, id: String(i++)});
+                } else {
+                    this.queryError("Query has a series with multiple values for a given time.");
+
+                    last = null;
+
+                    let rangeSeries: RangeSeries = new RangeSeries();
+                    rangeSeries.id = String(i++);
+                    let rangeIndex = -1;
+                    for (let j = 0; j < values.length; j++) {
+                        if (values[j][0] != last) {
+                            rangeSeries.values.push(new RangeDatapoint(values[j][0], values[j][1], values[j][1]));
+                            rangeIndex++;
+                        } else {
+                            if (rangeSeries.values[rangeIndex].max < values[j][1]) {
+                                rangeSeries.values[rangeIndex].max = values[j][1];
+                            }
+                            if (rangeSeries.values[rangeIndex].min > values[j][1]) {
+                                rangeSeries.values[rangeIndex].min = values[j][1];
+                            }
+                        }
+                        last = values[j][0];
+                    }
+
+                    rangeSeriesList.push(rangeSeries);
+                }
             });
         });
 
@@ -159,16 +208,40 @@ class EditAlertViewModel {
             .rangeRound([height, 0]);
         let z = d3.scaleOrdinal(d3.schemeCategory10);
 
-        let line = d3.line<number[]>()
+        let line = d3.line<Datapoint>()
             .x((d) => { return x(d[0]); })
             .y((d) => { return y(d[1]); });
 
-        let xrange = [d3.min(series, ts => d3.min(ts.values, d => d[0])), d3.max(series, ts => d3.max(ts.values, d => d[0]))];
+        let xrange = [
+            Math.min(
+                d3.min(series, ts => d3.min(ts.values, d => d[0]))
+                        || Infinity,
+                d3.min(rangeSeriesList, rs => d3.min(rs.values, d => d.timestamp))
+                        || Infinity),
+            Math.max(
+                d3.max(series, ts => d3.max(ts.values, d => d[0]))
+                        || -Infinity,
+                d3.max(rangeSeriesList, rs => d3.max(rs.values, d => d.timestamp))
+                        || -Infinity)];
         x.domain(xrange);
-        let yrange = [d3.min(series, ts => d3.min(ts.values, d => d[1])), d3.max(series, ts => d3.max(ts.values, d => d[1]))];
+        let yrange = [
+            Math.min(
+                d3.min(series, ts => d3.min(ts.values, d => d[1]))
+                        || Infinity,
+                d3.min(rangeSeriesList, rs => d3.min(rs.values, d => d.min))
+                || Infinity),
+            Math.max(
+                d3.max(series, ts => d3.max(ts.values, d => d[1]))
+                || -Infinity,
+                d3.max(rangeSeriesList, rs => d3.max(rs.values, d => d.max))
+                || -Infinity)];
         // let yrange = [d3.min(series[0], function(d) { return d[1]; }), d3.max(series[0], function(d) { return d[1]; })];
         y.domain(yrange);
 
+        let area = d3.area<RangeDatapoint>()
+            .x((d) => { return x(d.timestamp); })
+            .y0((d) => { return y(d.min); })
+            .y1((d) => { return y(d.max); });
 
         g.append("g")
             .attr("transform", "translate(0," + height + ")")
@@ -188,6 +261,17 @@ class EditAlertViewModel {
             .attr("fill", "none")
             .attr("d", function(d) { return line(d.values); })
             .style("stroke", function(d) { return z(d.id); });
+
+        let ats = g.selectAll(".ats")
+            .data(rangeSeriesList)
+            .enter().append("g")
+            .attr("class", "ats");
+        ats.append("path")
+            .attr("class", "area")
+            .attr("fill", function(d) { return z(d.id); })
+            .attr("d", function(d) { return area(d.values); })
+            .style("opacity", 0.3)
+            .style("stroke", function(d) {return z(d.id); });
 
         // ts.append("text")
         //     .datum(function(d) { return {id: d.id, value: d.values[d.values.length - 1]}; })
