@@ -81,6 +81,7 @@ class EditAlertViewModel {
     valueUnit = ko.observable<string>(null);
     container: HTMLElement;
     queryError = ko.observable<string>(null);
+    queryWarning = ko.observable<string>(null);
     operators = [
         new OperatorOption("<", "LESS_THAN"),
         new OperatorOption("<=", "LESS_THAN_OR_EQUAL_TO"),
@@ -145,6 +146,7 @@ class EditAlertViewModel {
 
     private queryDataLoad(response: QueryResponse) {
         this.queryError(null);
+        this.queryWarning(null);
         let series: Series[] = [];
         let rangeSeriesList: RangeSeries[] = [];
         let i = 0;
@@ -164,7 +166,7 @@ class EditAlertViewModel {
                 if (!range) {
                     series.push({values: result.values, id: String(i++)});
                 } else {
-                    this.queryError("Query has a series with multiple values for a given time.");
+                    this.queryWarning("Query has a series with multiple values for a given time.");
 
                     last = null;
 
