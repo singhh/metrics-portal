@@ -21,6 +21,7 @@ import Operator = require("./Operator");
 import Quantity = require("../Quantity");
 import uuid = require('../Uuid');
 import flotr = require('flotr2');
+import moment = require('moment');
 import d3 = require('d3');
 import ErrorTextStatus = JQuery.Ajax.ErrorTextStatus;
 import jqXHR = JQuery.jqXHR;
@@ -82,6 +83,21 @@ class EditAlertViewModel {
     container: HTMLElement;
     queryError = ko.observable<string>(null);
     queryWarning = ko.observable<string>(null);
+    dateRange = ko.observable<any[]>([moment().subtract(2, 'hours'), moment()]);
+    formattedDateRange = ko.computed(() => {
+        let range = this.dateRange();
+        let start = range[0];
+        let end = range[1];
+        return start.calendar() + " to " + end.calendar();
+    });
+
+    formattedQuery = ko.computed(() => {
+        let dateRange = this.dateRange();
+        let startTime = dateRange[0];
+        let endTime = dateRange[1];
+        return "from '" + startTime.toISOString() + "' to '" + endTime.toISOString() + "' " + this.query();
+    });
+
     operators = [
         new OperatorOption("<", "LESS_THAN"),
         new OperatorOption("<=", "LESS_THAN_OR_EQUAL_TO"),
@@ -92,7 +108,7 @@ class EditAlertViewModel {
     ];
 
     constructor() {
-        this.query.subscribe((newValue) => this.queryChanged(newValue));
+        this.formattedQuery.subscribe((newValue) => this.queryChanged(newValue));
     }
 
     activate(id: String) {
@@ -195,7 +211,7 @@ class EditAlertViewModel {
 
         let svg = d3.select(this.container);
         svg.select("g").remove();
-        let margin = {top: 20, right: 80, bottom: 30, left: 50};
+        let margin = {top: 20, right: 20, bottom: 30, left: 20};
         let width = 0;
         let height = 0;
         if (svg.node() != null) {
@@ -219,12 +235,14 @@ class EditAlertViewModel {
                 d3.min(series, ts => d3.min(ts.values, d => d[0]))
                         || Infinity,
                 d3.min(rangeSeriesList, rs => d3.min(rs.values, d => d.timestamp))
-                        || Infinity),
+                        || Infinity,
+                +this.dateRange()[0]),
             Math.max(
                 d3.max(series, ts => d3.max(ts.values, d => d[0]))
                         || -Infinity,
                 d3.max(rangeSeriesList, rs => d3.max(rs.values, d => d.timestamp))
-                        || -Infinity)];
+                        || -Infinity,
+                +this.dateRange()[1])];
         x.domain(xrange);
         let yrange = [
             Math.min(

@@ -51,8 +51,20 @@
                     <button type="submit" class="btn btn-warning" data-bind="click: cancel">Cancel</button>
                 </form>
             </div>
-            <svg class="col-md-8 hidden-sm col-lg-8" style="height: 80vh" id="graph">
-            </svg>
+            <div class="col-md-8 col-lg-8 col-sm-12 container-fluid">
+                <div class="row-fluid">
+                    <div class="col-md-4 col-md-4 col-sm-12 pull-right">
+                        <div data-bind="dateRange: {target: dateRange, options: { timePicker: true } }" class="pull-right" style="background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc; width: 100%">
+                            <i class="glyphicon glyphicon-calendar fa fa-calendar"></i>&nbsp;
+                            <span data-bind="text: formattedDateRange"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="row-fluid">
+                    <svg class="col-md-12" style="height: 80vh" id="graph">
+                    </svg>
+                </div>
+            </div>
         </div>
     </div>
 </div>

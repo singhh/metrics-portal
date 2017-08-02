@@ -2,9 +2,11 @@
 ///<amd-dependency path="jquery.ui"/>
 ///<amd-dependency path="jqrangeslider"/>
 ///<amd-dependency path="typeahead" />
+///<amd-dependency path="daterangepicker" />
 
 import ko = require('knockout');
 import $ = require('jquery');
+import moment = require('moment');
 
 module kobindings {
     ko.bindingHandlers['slider'] = {
@@ -103,6 +105,28 @@ module kobindings {
                     }
                 });
             }
+        }
+    };
+
+    ko.bindingHandlers['dateRange'] = {
+        update: function(element, valueAccessor, allValuesAccessor) {
+            let value = valueAccessor();
+            let valueUnwrapped: any = ko.utils.unwrapObservable(value);
+            let el: any = $(element);
+
+            let defaultOptions = {
+               ranges: {
+                   "Last hour" : [moment().subtract(1, 'hour'), moment()],
+                   "Last 3 hours" : [moment().subtract(3, 'hour'), moment()],
+                   "Last 6 hours" : [moment().subtract(6, 'hour'), moment()],
+                   "Today": [moment().startOf('day'), moment().endOf('day')]
+               },
+               autoApply: true
+            };
+            let options = Object.assign({}, defaultOptions, valueUnwrapped.options || {});
+            console.log(options);
+            let range = el.daterangepicker(options, (start, end, label) => {console.log(start, end, label); valueUnwrapped.target([start, end]); });
+
         }
     }
 }
