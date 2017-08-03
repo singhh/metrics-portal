@@ -324,7 +324,7 @@ public class QueryRunner extends MqlBaseVisitor<Object> {
     private final KairosDbClient _kairosDbClient;
     private final ObjectMapper _mapper;
 
-    private static final Set<String> LIFTABLE_AGGREGATIONS = Sets.newHashSet("min", "max", "merge", "percentile", "count", "avg");
+    private static final Set<String> LIFTABLE_AGGREGATIONS = Sets.newHashSet("min", "max", "merge", "percentile", "count", "avg", "sum");
 
     private static final class TimeRange {
         private TimeRange(final DateTime start, final DateTime end) {
