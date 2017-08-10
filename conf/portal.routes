@@ -45,6 +45,7 @@ PUT        /v1/expressions                      controllers.ExpressionController
 
 # Metrics Queries
 POST       /v1/metrics/query                    controllers.MetricsController.query()
+POST       /v1/metrics/backtest                 controllers.MetricsController.backtest()
 
 # Templates
 GET        /assets/html/HeaderViewModel.html    controllers.ApplicationController.getHeaderViewModel

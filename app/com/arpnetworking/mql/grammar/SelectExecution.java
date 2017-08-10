@@ -2,7 +2,6 @@ package com.arpnetworking.mql.grammar;
 
 import com.arpnetworking.kairos.client.KairosDbClient;
 import com.arpnetworking.kairos.client.models.MetricsQuery;
-import com.arpnetworking.kairos.client.models.MetricsQueryResponse;
 
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
@@ -15,11 +14,7 @@ import java.util.concurrent.CompletionStage;
 public class SelectExecution extends BaseExecution {
     @Override
     public CompletionStage<TimeSeriesResult> executeWithDependencies(final Map<StageExecution, TimeSeriesResult> results) {
-        return _client.queryMetrics(_query.build()).thenApply(SelectExecution::toTimeSeriesResult);
-    }
-
-    private static TimeSeriesResult toTimeSeriesResult(final MetricsQueryResponse response) {
-        return new TimeSeriesResult(response);
+        return _client.queryMetrics(_query.build()).thenApply(TimeSeriesResult::new);
     }
 
     private SelectExecution(final Builder builder) {
