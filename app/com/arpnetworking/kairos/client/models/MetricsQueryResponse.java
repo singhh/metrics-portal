@@ -152,6 +152,14 @@ public final class MetricsQueryResponse {
     }
 
     public static final class DataPoint {
+        public DateTime getTime() {
+            return _time;
+        }
+
+        public Object getValue() {
+            return _value;
+        }
+
         private DataPoint(final Builder builder) {
             _time = builder._time;
             _value = builder._value;

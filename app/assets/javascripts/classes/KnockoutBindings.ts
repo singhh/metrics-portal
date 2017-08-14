@@ -7,6 +7,8 @@
 import ko = require('knockout');
 import $ = require('jquery');
 import moment = require('moment');
+import _ = require('underscore');
+
 
 module kobindings {
     ko.bindingHandlers['slider'] = {
@@ -109,23 +111,32 @@ module kobindings {
     };
 
     ko.bindingHandlers['dateRange'] = {
-        update: function(element, valueAccessor, allValuesAccessor) {
+        init: function(element, valueAccessor) {
+            let el: any = $(element);
             let value = valueAccessor();
             let valueUnwrapped: any = ko.utils.unwrapObservable(value);
-            let el: any = $(element);
+            let ranges = {
+                   "Last hour" : [() => moment().subtract(1, 'hour'), () => moment()],
+                   "Last 2 hours" : [() => moment().subtract(2, 'hour'), () => moment()],
+                   "Last 3 hours" : [() => moment().subtract(3, 'hour'), () => moment()],
+                   "Last 6 hours" : [() => moment().subtract(6, 'hour'), () => moment()],
+                   "Today": [() => moment().startOf('day'), () => moment().endOf('day')]
+               };
 
             let defaultOptions = {
-               ranges: {
-                   "Last hour" : [moment().subtract(1, 'hour'), moment()],
-                   "Last 3 hours" : [moment().subtract(3, 'hour'), moment()],
-                   "Last 6 hours" : [moment().subtract(6, 'hour'), moment()],
-                   "Today": [moment().startOf('day'), moment().endOf('day')]
-               },
+               ranges: _.mapObject(ranges, (o) => [o[0](), o[1]()]),
                autoApply: true
             };
+
             let options = Object.assign({}, defaultOptions, valueUnwrapped.options || {});
-            console.log(options);
-            let range = el.daterangepicker(options, (start, end, label) => {console.log(start, end, label); valueUnwrapped.target([start, end]); });
+            let range = el.daterangepicker(options, (start, end, label) => {
+                if (label == "Custom Range") {
+                    valueUnwrapped.target([start, end]);
+                } else if (ranges[label]) {
+                    let range = ranges[label];
+                    valueUnwrapped.target([range[0](), range[1]()]);
+                }
+            });
 
         }
     }
