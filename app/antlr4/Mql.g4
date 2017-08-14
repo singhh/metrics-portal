@@ -13,7 +13,7 @@ WHERE : [Ww][Hh][Ee][Rr][Ee] ;
 AND : [Aa][Nn][Dd] ;
 
 /* AGG syntax */
-AGG : [Aa][Gg][Gg] ;
+//AGG : [Aa][Gg][Gg] ;
 OF : [Oo][Ff] ;
 
 /* FILTER syntax */
@@ -42,11 +42,11 @@ R_PAREND : ')' ;
 L_BRACKET : '[' ;
 R_BRACKET : ']' ;
 
-NumericLiteral : Digits '.' Digits? ([Ee] [+-]? Digits)?
+Double : Digits '.' Digits? ([Ee] [+-]? Digits)?
             | '.' Digits ([Ee] [+-]? Digits)?
             | Digits [Ee] [+-]? Digits
-            | Integral
             ;
+
 
 Integral : Digits ;
 
@@ -54,15 +54,24 @@ fragment Digits : [0-9]+ ;
 
 timeUnit : SECONDS | SECOND | MINUTES | MINUTE | HOURS | HOUR | DAYS | DAY | WEEKS | WEEK | MONTHS | MONTH | YEARS | YEAR ;
 
-StringLiteral : UnterminatedStringConstant '\'' ;
+
+
+numericLiteral: Double
+                    | Integral;
 
 UnterminatedStringConstant : '\'' ( '\\\'' | ~'\'' )* ;
+
+TerminatedString : UnterminatedStringConstant '\'' ;
+
+stringLiteral :  TerminatedString;
 
 Whitespace :[ \t]+ -> channel(HIDDEN) ;
 
 Newline :('\r' '\n'? | '\n') -> channel(HIDDEN) ;
 
-Identifier : IdentifierCharacter+;
+identifier : IdentifierString;
+
+IdentifierString : IdentifierCharacter+;
 
 IdentifierCharacter : [a-zA-Z0-9./\\_]
                         |	// these are the valid characters from 0x80 to 0xFF
@@ -79,23 +88,15 @@ statement : stage (PIPE stage)* EOF;
 
 stage : (select | agg) (AS? timeSeriesReference)? ;
 
-filter : FILTER filterFunctionName filterArgList ;
+agg : aggFunctionName aggArgList ofList? ;
 
-filterFunctionName : Identifier ;
-
-filterArgList : filterArgPair* ;
-
-filterArgPair : argName EQUALS argValue ;
-
-agg : AGG aggFunctionName aggArgList ofList? ;
-
-aggFunctionName : Identifier ;
+aggFunctionName : identifier ;
 
 aggArgList : aggArgPair* ;
 
 aggArgPair : argName EQUALS argValue ;
 
-argName : Identifier ;
+argName : identifier ;
 
 ofList : OF timeSeriesReference (COMMA timeSeriesReference)* ;
 
@@ -103,38 +104,28 @@ argValue : expression ;
 
 select : (FROM timeRange)? SELECT metricName whereClause? groupByClause?;
 
-timeSeriesReference : Identifier ;
+timeSeriesReference : identifier ;
 
 whereClause : WHERE whereTerm ((AND | COMMA) whereTerm)*;
 
 whereTerm : tag EQUALS whereValue ;
 
-tag : Identifier ;
+tag : identifier ;
 
-whereValue : quotedString | L_BRACKET quotedString (COMMA quotedString)* R_BRACKET ;
-
-quotedString : StringLiteral ;
+whereValue : stringLiteral | L_BRACKET stringLiteral (COMMA stringLiteral)* R_BRACKET ;
 
 groupByClause : GROUP BY groupByTerm (COMMA groupByTerm)* ;
 
-groupByTerm : Identifier ;
+groupByTerm : identifier ;
 
-aggregation : aggregatorName (L_PAREND argumentList? R_PAREND)? ;
-
-aggregatorName : Identifier ;
-
-argumentList : argument (COMMA argument)* ;
-
-argument : expression ;
-
-expression : StringLiteral | NumericLiteral | Identifier ;
+expression : stringLiteral | numericLiteral | identifier ;
 
 timeRange : pointInTime (TO pointInTime)? ;
 
 pointInTime : relativeTime | absoluteTime ;
 
-relativeTime : NOW | NumericLiteral timeUnit AGO ;
+relativeTime : NOW | numericLiteral timeUnit AGO ;
 
-absoluteTime : quotedString ;
+absoluteTime : stringLiteral ;
 
-metricName : Identifier ;
+metricName : identifier ;

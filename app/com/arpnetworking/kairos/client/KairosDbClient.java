@@ -6,6 +6,7 @@ import akka.http.javadsl.model.ContentTypes;
 import akka.http.javadsl.model.HttpRequest;
 import akka.stream.ActorMaterializer;
 import com.arpnetworking.commons.builder.OvalBuilder;
+import com.arpnetworking.kairos.client.models.KairosQuery;
 import com.arpnetworking.kairos.client.models.MetricsQuery;
 import com.arpnetworking.kairos.client.models.MetricsQueryResponse;
 import com.fasterxml.jackson.annotation.JacksonInject;
@@ -31,11 +32,12 @@ public class KairosDbClient {
      * @param query the query
      * @return the response
      */
-    public CompletionStage<MetricsQueryResponse> queryMetrics(final MetricsQuery query) {
+    public CompletionStage<KairosQuery> queryMetrics(final MetricsQuery query) {
         try {
             final HttpRequest request = HttpRequest.POST(createUri(METRICS_QUERY_PATH))
                     .withEntity(ContentTypes.APPLICATION_JSON, _mapper.writeValueAsString(query));
-            return fireRequest(request, MetricsQueryResponse.class);
+            return fireRequest(request, MetricsQueryResponse.class)
+                    .thenApply(response -> new KairosQuery.Builder().setRequest(query).setResponse(response).build());
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }

@@ -14,6 +14,7 @@ import org.joda.time.DateTimeFieldType;
 import org.joda.time.Duration;
 
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -78,7 +79,7 @@ public class QueryRunner extends MqlBaseVisitor<Object> {
             dependencies = Collections.emptyList();
         }
 
-        final String aggregator = ctx.aggFunctionName().Identifier().getText().toLowerCase();
+        final String aggregator = visitIdentifier(ctx.aggFunctionName().identifier()).toLowerCase();
 
         // Check to see if we can lift the aggregator to a dependent query
         if (dependencies.size() >= 1) {
@@ -95,13 +96,13 @@ public class QueryRunner extends MqlBaseVisitor<Object> {
                 builder.getQuery().setMetrics(newMetrics);
                 return builder.build();
             } else {
-                final BaseExecution.Builder<?, ?> builder;
-                if ("union".equals(aggregator)) {
-                    builder = new UnionAggregator.Builder();
-                } else {
+                final Map<String, Object> args = visitAggArgList(ctx.aggArgList());
+                final Class<? extends BaseExecution.Builder<?, ?>> clazz = AGG_BUILDERS.get(aggregator);
+                if (clazz == null) {
                     throw new IllegalArgumentException("Unknown aggregator '" + aggregator + "'");
                 }
 
+                final BaseExecution.Builder<?, ?> builder = _mapper.convertValue(args, clazz);
                 dependencies.forEach(builder::addDependency);
                 return builder.build();
             }
@@ -110,11 +111,25 @@ public class QueryRunner extends MqlBaseVisitor<Object> {
     }
 
     @Override
+    public Map<String, Object> visitAggArgList(MqlParser.AggArgListContext ctx) {
+        final LinkedHashMap<String, Object> argMap = Maps.newLinkedHashMap();
+        for (MqlParser.AggArgPairContext argPairContext : ctx.aggArgPair()) {
+            argMap.put(visitArgName(argPairContext.argName()), visitArgValue(argPairContext.argValue()));
+        }
+        return argMap;
+    }
+
+    @Override
+    public String visitArgName(MqlParser.ArgNameContext ctx) {
+        return visitIdentifier(ctx.identifier());
+    }
+
+    @Override
     public List<StageExecution> visitOfList(final MqlParser.OfListContext ctx) {
         final List<StageExecution> ofList = Lists.newArrayList();
         final List<MqlParser.TimeSeriesReferenceContext> references = ctx.timeSeriesReference();
         for (MqlParser.TimeSeriesReferenceContext reference : references) {
-            final String name = reference.Identifier().getText();
+            final String name = visitIdentifier(reference.identifier());
             if (!_stages.containsKey(name)) {
                 throw new IllegalStateException("Referenced stage '" + name + "' does not exist for aggregation");
             }
@@ -125,7 +140,7 @@ public class QueryRunner extends MqlBaseVisitor<Object> {
 
     @Override
     public String visitTimeSeriesReference(final MqlParser.TimeSeriesReferenceContext ctx) {
-        return ctx.Identifier().getText();
+        return visitIdentifier(ctx.identifier());
     }
 
     @Override
@@ -140,7 +155,7 @@ public class QueryRunner extends MqlBaseVisitor<Object> {
 
         final MetricsQuery.Builder query = new MetricsQuery.Builder();
 
-        final String metricName = ctx.metricName().Identifier().getText();
+        final String metricName = visitIdentifier(ctx.metricName().identifier());
         if (ctx.timeRange() != null) {
             final TimeRange timeRange = visitTimeRange(ctx.timeRange());
             query.setStartTime(timeRange._start)
@@ -195,7 +210,7 @@ public class QueryRunner extends MqlBaseVisitor<Object> {
 
     @Override
     public String visitGroupByTerm(final MqlParser.GroupByTermContext ctx) {
-        return ctx.Identifier().getText();
+        return visitIdentifier(ctx.identifier());
     }
 
     @Override
@@ -205,7 +220,7 @@ public class QueryRunner extends MqlBaseVisitor<Object> {
 
     @Override
     public DateTime visitAbsoluteTime(final MqlParser.AbsoluteTimeContext ctx) {
-        final String toParse = visitQuotedString(ctx.quotedString());
+        final String toParse = visitStringLiteral(ctx.stringLiteral());
         return DateTime.parse(toParse);
     }
 
@@ -226,21 +241,35 @@ public class QueryRunner extends MqlBaseVisitor<Object> {
     }
 
     @Override
+    public Number visitNumericLiteral(MqlParser.NumericLiteralContext ctx) {
+        if (ctx.Double() != null) {
+            return Double.parseDouble(ctx.Double().getText());
+        } else {
+            return Long.parseLong(ctx.Integral().getText());
+        }
+    }
+
+    @Override
     public String visitTag(final MqlParser.TagContext ctx) {
-        return ctx.Identifier().getText();
+        return visitIdentifier(ctx.identifier());
     }
 
     @Override
     public List<String> visitWhereValue(final MqlParser.WhereValueContext ctx) {
-        return ctx.quotedString().stream().map(this::visitQuotedString).collect(Collectors.toList());
+        return ctx.stringLiteral().stream().map(this::visitStringLiteral).collect(Collectors.toList());
     }
 
     @Override
-    public String visitQuotedString(final MqlParser.QuotedStringContext ctx) {
+    public String visitStringLiteral(final MqlParser.StringLiteralContext ctx) {
         final String raw = ctx.getText();
         final String stripped = raw.substring(1, raw.length() - 1);
         // TODO: Escape things like octal an unicode properly
         return escapeString(stripped);
+    }
+
+    @Override
+    public String visitIdentifier(MqlParser.IdentifierContext ctx) {
+        return ctx.getText();
     }
 
     private String escapeString(final String in) {
@@ -289,12 +318,13 @@ public class QueryRunner extends MqlBaseVisitor<Object> {
         return b.toString();
     }
 
+
     @Override
     public DateTime visitRelativeTime(final MqlParser.RelativeTimeContext ctx) {
         if (ctx.NOW() != null) {
             return DateTime.now();
         } else {
-            final double number = Double.parseDouble(ctx.NumericLiteral().getText());
+            final double number = Double.parseDouble(ctx.numericLiteral().getText());
             final MqlParser.TimeUnitContext unit = ctx.timeUnit();
             final Duration ago;
             if (unit.SECOND() != null || unit.SECONDS() != null) {
@@ -325,6 +355,12 @@ public class QueryRunner extends MqlBaseVisitor<Object> {
     private final ObjectMapper _mapper;
 
     private static final Set<String> LIFTABLE_AGGREGATIONS = Sets.newHashSet("min", "max", "merge", "percentile", "count", "avg", "sum");
+    private static final Map<String, Class<? extends BaseExecution.Builder<?, ?>>> AGG_BUILDERS = Maps.newHashMap();
+
+    static {
+        AGG_BUILDERS.put("union", UnionAggregator.Builder.class);
+        AGG_BUILDERS.put("threshold", SimpleThresholdAlertExecution.Builder.class);
+    }
 
     private static final class TimeRange {
         private TimeRange(final DateTime start, final DateTime end) {
