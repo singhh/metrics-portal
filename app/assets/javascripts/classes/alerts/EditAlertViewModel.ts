@@ -37,6 +37,12 @@ class OperatorOption {
     }
 }
 
+class MetricsResponse {
+    response: QueryResponse;
+    errors: String[];
+    warnings: String[];
+}
+
 class QueryResponse {
     queries: Query[];
 }
@@ -160,13 +166,17 @@ class EditAlertViewModel {
         }
     }
 
-    private queryDataLoad(response: QueryResponse) {
+    private queryDataLoad(response: MetricsResponse) {
         this.queryError(null);
         this.queryWarning(null);
+        let warnings = [];
+        let errors = [];
         let series: Series[] = [];
         let rangeSeriesList: RangeSeries[] = [];
         let i = 0;
-        response.queries.forEach((query) => {
+        warnings.push(response.warnings);
+        errors.push(response.errors);
+        response.response.queries.forEach((query) => {
             query.results.forEach((result) => {
                 //TODO: walk the values to look for duplicates, if duplicates create a RangeSeries from it
                 let values = result.values;
@@ -182,7 +192,7 @@ class EditAlertViewModel {
                 if (!range) {
                     series.push({values: result.values, id: String(i++)});
                 } else {
-                    this.queryWarning("Query has a series with multiple values for a given time.");
+                    warnings.push("Query has a series with multiple values for a given time.");
 
                     last = null;
 
@@ -209,6 +219,8 @@ class EditAlertViewModel {
             });
         });
 
+        this.queryWarning(warnings.join("\r\n"));
+        this.queryError(errors.join("\r\n"));
         let svg = d3.select(this.container);
         svg.select("g").remove();
         let margin = {top: 20, right: 20, bottom: 30, left: 20};

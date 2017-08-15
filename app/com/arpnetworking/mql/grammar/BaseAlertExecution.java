@@ -18,7 +18,7 @@ public abstract class BaseAlertExecution extends BaseExecution {
         }
         final MetricsQueryResponse newResponse = new MetricsQueryResponse.Builder().setQueries(queries).build();
         evaluateAlerts(Lists.newArrayList(results.values()));
-        return CompletableFuture.completedFuture(new TimeSeriesResult(newResponse));
+        return CompletableFuture.completedFuture(new TimeSeriesResult.Builder().setResponse(newResponse).build());
     }
 
     abstract List<AlertTrigger> evaluateAlerts(final List<TimeSeriesResult> results);

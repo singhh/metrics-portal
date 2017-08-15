@@ -1,11 +1,11 @@
 package controllers;
 
-import com.arpnetworking.kairos.client.models.MetricsQueryResponse;
 import com.arpnetworking.mql.grammar.CollectingErrorListener;
 import com.arpnetworking.mql.grammar.ExecutionException;
 import com.arpnetworking.mql.grammar.MqlLexer;
 import com.arpnetworking.mql.grammar.MqlParser;
 import com.arpnetworking.mql.grammar.QueryRunner;
+import com.arpnetworking.mql.grammar.TimeSeriesResult;
 import com.arpnetworking.steno.Logger;
 import com.arpnetworking.steno.LoggerFactory;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -49,7 +49,7 @@ public class MetricsController extends Controller {
             final MetricsQuery query = parseQueryJson();
             final MqlParser.StatementContext statement = parseQuery(query);
             final QueryRunner queryRunner = _queryRunnerFactory.get();
-            final CompletionStage<MetricsQueryResponse> response;
+            final CompletionStage<TimeSeriesResult> response;
             response = queryRunner.visitStatement(statement);
             return response.<JsonNode>thenApply(_mapper::valueToTree).thenApply(Results::ok);
         } catch (final RuntimeException ex) {
@@ -64,7 +64,7 @@ public class MetricsController extends Controller {
             final MetricsQuery query = parseQueryJson();
             final MqlParser.StatementContext statement = parseQuery(query);
             final QueryRunner queryRunner = _queryRunnerFactory.get();
-            final CompletionStage<MetricsQueryResponse> response;
+            final CompletionStage<TimeSeriesResult> response;
             response = queryRunner.visitStatement(statement);
             return response.<JsonNode>thenApply(_mapper::valueToTree).thenApply(Results::ok);
         } catch (final RuntimeException ex) {

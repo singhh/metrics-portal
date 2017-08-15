@@ -2,7 +2,6 @@ package com.arpnetworking.mql.grammar;
 
 import com.arpnetworking.kairos.client.KairosDbClient;
 import com.arpnetworking.kairos.client.models.MetricsQuery;
-import com.arpnetworking.kairos.client.models.MetricsQueryResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Lists;
@@ -35,7 +34,7 @@ public class QueryRunner extends MqlBaseVisitor<Object> {
     }
 
     @Override
-    public CompletionStage<MetricsQueryResponse> visitStatement(final MqlParser.StatementContext ctx) {
+    public CompletionStage<TimeSeriesResult> visitStatement(final MqlParser.StatementContext ctx) {
         final List<MqlParser.StageContext> stages = ctx.stage();
         // Build each stage and chain them together
         int x = 0;
@@ -43,7 +42,7 @@ public class QueryRunner extends MqlBaseVisitor<Object> {
             _previousStage = visitStage(stage);
         }
 
-        return _previousStage.execute().thenApply(TimeSeriesResult::getResponse);
+        return _previousStage.execute();
 //        return CompletableFuture.completedFuture(JsonNodeFactory.instance.objectNode().put("foo", "bar"));
     }
 

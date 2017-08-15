@@ -19,7 +19,7 @@ public class UnionAggregator extends BaseExecution {
             queries.addAll(results.get(execution).getResponse().getQueries());
         }
         final MetricsQueryResponse newResponse = new MetricsQueryResponse.Builder().setQueries(queries).build();
-        return CompletableFuture.completedFuture(new TimeSeriesResult(newResponse));
+        return CompletableFuture.completedFuture(new TimeSeriesResult.Builder().setResponse(newResponse).build());
     }
 
     private UnionAggregator(final Builder builder) {

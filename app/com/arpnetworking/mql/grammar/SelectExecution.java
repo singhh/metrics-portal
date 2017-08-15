@@ -14,7 +14,8 @@ import java.util.concurrent.CompletionStage;
 public class SelectExecution extends BaseExecution {
     @Override
     public CompletionStage<TimeSeriesResult> executeWithDependencies(final Map<StageExecution, TimeSeriesResult> results) {
-        return _client.queryMetrics(_query.build()).thenApply(TimeSeriesResult::new);
+        return _client.queryMetrics(_query.build()).thenApply(
+                result -> new TimeSeriesResult.Builder().setResponse(result.getResponse()).build());
     }
 
     private SelectExecution(final Builder builder) {
