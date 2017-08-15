@@ -61,6 +61,11 @@ public class SimpleThresholdAlertExecution extends BaseAlertExecution {
             return this;
         }
 
+        public Builder setOperator(final Operator value) {
+            _operator = value;
+            return this;
+        }
+
         @Override
         protected Builder self() {
             return this;

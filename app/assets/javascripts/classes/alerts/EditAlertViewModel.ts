@@ -25,7 +25,6 @@ import moment = require('moment');
 import d3 = require('d3');
 import ErrorTextStatus = JQuery.Ajax.ErrorTextStatus;
 import jqXHR = JQuery.jqXHR;
-import {max} from "d3-array";
 
 class OperatorOption {
     text: string;
@@ -39,8 +38,8 @@ class OperatorOption {
 
 class MetricsResponse {
     response: QueryResponse;
-    errors: String[];
-    warnings: String[];
+    errors: string[];
+    warnings: string[];
 }
 
 class QueryResponse {
@@ -87,8 +86,8 @@ class EditAlertViewModel {
     value = ko.observable<number>(0);
     valueUnit = ko.observable<string>(null);
     container: HTMLElement;
-    queryError = ko.observable<string>(null);
-    queryWarning = ko.observable<string>(null);
+    queryErrors = ko.observableArray<string>();
+    queryWarnings = ko.observableArray<string>();
     dateRange = ko.observable<any[]>([moment().subtract(2, 'hours'), moment()]);
     formattedDateRange = ko.computed(() => {
         let range = this.dateRange();
@@ -117,7 +116,7 @@ class EditAlertViewModel {
         this.formattedQuery.subscribe((newValue) => this.queryChanged(newValue));
     }
 
-    activate(id: String) {
+    activate(id: string) {
         if (id != null) {
             this.loadAlert(id);
         } else {
@@ -128,7 +127,7 @@ class EditAlertViewModel {
         this.container = document.getElementById('graph');
     }
 
-    loadAlert(id: String): void {
+    loadAlert(id: string): void {
         $.getJSON("/v1/alerts/" + id, {}, (data) => {
             this.id(data.id);
             this.name(data.name);
@@ -157,25 +156,25 @@ class EditAlertViewModel {
     }
 
     private queryFailed(request: jqXHR) {
+        this.queryErrors.removeAll();
+        this.queryWarnings.removeAll();
         if (request.status / 100 == 4) {
             if (request.responseJSON != null && request.responseJSON.errors != null && request.responseJSON.errors.length > 0) {
-                this.queryError(request.responseJSON.errors[0]);
+                this.queryErrors.push(request.responseJSON.errors[0]);
             }
         } else if (request.status / 100 == 5) {
-            this.queryError("An unknown error has occurred, please try again later");
+            this.queryErrors.push("An unknown error has occurred, please try again later");
         }
     }
 
     private queryDataLoad(response: MetricsResponse) {
-        this.queryError(null);
-        this.queryWarning(null);
-        let warnings = [];
-        let errors = [];
+        this.queryErrors.removeAll();
+        this.queryWarnings.removeAll();
         let series: Series[] = [];
         let rangeSeriesList: RangeSeries[] = [];
         let i = 0;
-        warnings.push(response.warnings);
-        errors.push(response.errors);
+        response.warnings.forEach(w => this.queryWarnings.push(w));
+        response.errors.forEach(e => this.queryErrors.push(e));
         response.response.queries.forEach((query) => {
             query.results.forEach((result) => {
                 //TODO: walk the values to look for duplicates, if duplicates create a RangeSeries from it
@@ -192,7 +191,7 @@ class EditAlertViewModel {
                 if (!range) {
                     series.push({values: result.values, id: String(i++)});
                 } else {
-                    warnings.push("Query has a series with multiple values for a given time.");
+                    this.queryWarnings.push("Query has a series with multiple values for a given time.");
 
                     last = null;
 
@@ -219,8 +218,6 @@ class EditAlertViewModel {
             });
         });
 
-        this.queryWarning(warnings.join("\r\n"));
-        this.queryError(errors.join("\r\n"));
         let svg = d3.select(this.container);
         svg.select("g").remove();
         let margin = {top: 20, right: 20, bottom: 30, left: 20};

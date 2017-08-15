@@ -1,6 +1,7 @@
 package com.arpnetworking.kairos.client.models;
 
 import com.arpnetworking.commons.builder.OvalBuilder;
+import com.arpnetworking.mql.grammar.AlertTrigger;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -29,13 +30,19 @@ public final class MetricsQueryResponse {
         return _queries;
     }
 
+    public List<AlertTrigger> getAlerts() {
+        return _alerts;
+    }
+
     private MetricsQueryResponse(final Builder builder) {
         _other = builder._other;
         _queries = builder._queries;
+        _alerts = builder._alerts;
     }
 
     private final Map<String, Object> _other;
     private final List<Query> _queries;
+    private final List<AlertTrigger> _alerts;
 
     public static final class Builder extends OvalBuilder<MetricsQueryResponse> {
         public Builder() {
@@ -53,9 +60,17 @@ public final class MetricsQueryResponse {
             return this;
         }
 
+        public Builder setAlerts(final List<AlertTrigger> value) {
+            _alerts = value;
+            return this;
+        }
+
         @NotNull
         private List<Query> _queries;
+        @NotNull
         private Map<String, Object> _other = Maps.newHashMap();
+        @NotNull
+        private List<AlertTrigger> _alerts = Lists.newArrayList();
     }
 
     public static final class Query {

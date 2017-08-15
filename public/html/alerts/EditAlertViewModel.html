@@ -24,11 +24,15 @@
                         <label for="nameInput">Name</label>
                         <input class="form-control" data-bind="value: name" type="text" id="nameInput" placeholder="Name">
                     </div>
-                    <div class="form-group" data-bind="css: { 'has-error': queryError() != null, 'has-warning': queryWarning() != null }">
+                    <div class="form-group" data-bind="css: { 'has-error': queryErrors().length > 0, 'has-warning': queryWarnings().length > 0 }">
                         <label for="queryInput">Query</label>
-                        <textarea class="form-control" data-bind="textInput: query" rows="3" id="queryInput" placeholder="SELECT FROM 1 HOUR AGO ..."></textarea>
-                        <span class="help-block" data-bind="text: queryError"></span>
-                        <span class="help-block" data-bind="text: queryWarning"></span>
+                        <textarea class="form-control" data-bind="textInput: query" rows="3" id="queryInput" placeholder="SELECT ..."></textarea>
+                        <!-- ko foreach: queryErrors -->
+                        <span class="help-block" data-bind="text: $data"></span>
+                        <!-- /ko -->
+                        <!-- ko foreach: queryWarnings -->
+                        <span class="help-block" data-bind="text: $data"></span>
+                        <!-- /ko -->
                     </div>
                     <div class="form-group">
                         <label for="periodInput">Check Interval</label>

@@ -8,10 +8,14 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
+import net.sf.oval.ConstraintViolation;
+import net.sf.oval.context.FieldContext;
+import net.sf.oval.exception.ConstraintsViolatedException;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeFieldType;
 import org.joda.time.Duration;
 
+import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -103,7 +107,18 @@ public class QueryRunner extends MqlBaseVisitor<Object> {
 
                 final BaseExecution.Builder<?, ?> builder = _mapper.convertValue(args, clazz);
                 dependencies.forEach(builder::addDependency);
-                return builder.build();
+                try {
+                    return builder.build();
+                } catch (final ConstraintsViolatedException ex) {
+                    final ConstraintViolation[] violations = ex.getConstraintViolations();
+                    for (final ConstraintViolation violation : violations) {
+                        if (violation.getContext() instanceof FieldContext) {
+                            final Field field = ((FieldContext) violation.getContext()).getField();
+                            throw new IllegalArgumentException("Illegal value for field " + field.getName() + "; " + violation.getMessage());
+                        }
+                    }
+                    throw new IllegalArgumentException("boom!");
+                }
             }
         }
         throw new IllegalStateException("Aggregator '" + aggregator + "' does not have any inputs");

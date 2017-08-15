@@ -16,8 +16,8 @@ public abstract class BaseAlertExecution extends BaseExecution {
         for (final StageExecution execution : dependencies()) {
             queries.addAll(results.get(execution).getResponse().getQueries());
         }
-        final MetricsQueryResponse newResponse = new MetricsQueryResponse.Builder().setQueries(queries).build();
-        evaluateAlerts(Lists.newArrayList(results.values()));
+        final List<AlertTrigger> alerts = evaluateAlerts(Lists.newArrayList(results.values()));
+        final MetricsQueryResponse newResponse = new MetricsQueryResponse.Builder().setQueries(queries).setAlerts(alerts).build();
         return CompletableFuture.completedFuture(new TimeSeriesResult.Builder().setResponse(newResponse).build());
     }
 
